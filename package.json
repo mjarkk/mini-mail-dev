@@ -1,0 +1,22 @@
+{
+  "name": "mini-mail-server",
+  "private": true,
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@unocss/reset": "^0.56.5",
+    "solid-js": "^1.8.1"
+  },
+  "devDependencies": {
+    "prettier": "^3.0.3",
+    "typescript": "^5.2.2",
+    "unocss": "^0.56.5",
+    "vite": "^4.4.11",
+    "vite-plugin-solid": "^2.7.1"
+  }
+}
