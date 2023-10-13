@@ -81,7 +81,7 @@ func (s *Session) Data(r io.Reader) error {
 	now := time.Now()
 	ms := ulid.Timestamp(now)
 
-	email := ConvertEmail(
+	email, err := ConvertEmail(
 		s.Backend.BluemondayPolicy,
 		ulid.MustNew(ms, s.Backend.Entropy),
 		emailContents,
@@ -89,9 +89,15 @@ func (s *Session) Data(r io.Reader) error {
 		s.From,
 		s.To,
 	)
+	if err != nil {
+		return err
+	}
 
 	emailsLock.Lock()
 	emails = append(emails, email)
+	if len(emails) > 100 {
+		emails = emails[len(emails)-100:]
+	}
 	emailsLock.Unlock()
 
 	return nil

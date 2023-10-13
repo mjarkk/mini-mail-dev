@@ -36,25 +36,28 @@ func StartWebserver() {
 	})
 
 	apiGroup := app.Group("/api")
-	emailsGroup := apiGroup.Group("/emails")
 
-	emailsGroup.Get("", func(c *fiber.Ctx) error {
+	apiGroup.Get("/emails", func(c *fiber.Ctx) error {
 		hints := []EmailHint{}
 
 		emailsLock.Lock()
+		defer emailsLock.Unlock()
+
 		for _, email := range emails {
 			hints = append(hints, EmailToEmailHint(email))
 		}
-		emailsLock.Unlock()
 
 		return c.JSON(hints)
 	})
 
-	emailsGroup.Get("/:id", func(c *fiber.Ctx) error {
+	apiGroup.Get("/emails/:id", func(c *fiber.Ctx) error {
 		id, err := ulid.Parse(c.Params("id"))
 		if err != nil {
 			return err
 		}
+
+		emailsLock.Lock()
+		defer emailsLock.Unlock()
 
 		for _, email := range emails {
 			if email.ID == id {
@@ -65,22 +68,107 @@ func StartWebserver() {
 		return errors.New("email not found")
 	})
 
-	emailsGroup.Delete("/:id", func(c *fiber.Ctx) error {
+	apiGroup.Delete("/emails/:id", func(c *fiber.Ctx) error {
 		id, err := ulid.Parse(c.Params("id"))
 		if err != nil {
 			return err
 		}
 
 		emailsLock.Lock()
+		defer emailsLock.Unlock()
+
 		for i, email := range emails {
 			if email.ID == id {
 				emails = append(emails[:i], emails[i+1:]...)
 				break
 			}
 		}
-		emailsLock.Unlock()
 
 		return c.SendStatus(fiber.StatusNoContent)
+	})
+
+	apiGroup.Get("/emails/:id/attachments/:nr", func(c *fiber.Ctx) error {
+		id, err := ulid.Parse(c.Params("id"))
+		if err != nil {
+			return err
+		}
+
+		var invalidNr = errors.New("invalid attachment number")
+
+		nr, err := c.ParamsInt("nr")
+		if err != nil {
+			return invalidNr
+		}
+
+		if nr < 0 {
+			return invalidNr
+		}
+
+		emailsLock.Lock()
+		defer emailsLock.Unlock()
+
+		var paramEmail *Email
+		for _, email := range emails {
+			if email.ID == id {
+				paramEmail = &email
+				break
+			}
+
+		}
+
+		if paramEmail == nil {
+			return errors.New("email not found")
+		}
+
+		if nr >= len(paramEmail.Attachments) {
+			return invalidNr
+		}
+
+		attachment := paramEmail.Attachments[nr]
+		c.Response().Header.SetContentType(attachment.ContentType)
+		return c.Send(attachment.Data)
+	})
+
+	apiGroup.Get("/emails/:id/embeddedFiles/:nr", func(c *fiber.Ctx) error {
+		id, err := ulid.Parse(c.Params("id"))
+		if err != nil {
+			return err
+		}
+
+		var invalidNr = errors.New("invalid embedded file number")
+
+		nr, err := c.ParamsInt("nr")
+		if err != nil {
+			return invalidNr
+		}
+
+		if nr < 0 {
+			return invalidNr
+		}
+
+		emailsLock.Lock()
+		defer emailsLock.Unlock()
+
+		var paramEmail *Email
+		for _, email := range emails {
+			if email.ID == id {
+				paramEmail = &email
+				break
+			}
+
+		}
+
+		if paramEmail == nil {
+			return errors.New("email not found")
+		}
+
+		if nr >= len(paramEmail.EmbeddedFiles) {
+			return invalidNr
+		}
+
+		attachment := paramEmail.EmbeddedFiles[nr]
+		c.Response().Header.SetContentType(attachment.ContentType)
+		return c.Send(attachment.Data)
 	})
 
 	log.Fatal(app.Listen(":3000"))

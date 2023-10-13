@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/mail"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/DusanKasan/parsemail"
@@ -38,34 +39,39 @@ func ConvertAddress(ad mail.Address) Address {
 
 // Attachment with json attributes
 type Attachment struct {
-	Filename    string    `json:"filename"`
-	ContentType string    `json:"contentType"`
-	Data        io.Reader `json:"-"`
+	Filename    string `json:"filename"`
+	ContentType string `json:"contentType"`
+	Data        []byte `json:"-"`
 }
 
 // ConvertAttachment converts parsemail.Attachment to a Attachment
-func ConvertAttachment(at parsemail.Attachment) Attachment {
+func ConvertAttachment(at parsemail.Attachment) (Attachment, error) {
+	data, err := io.ReadAll(at.Data)
 	return Attachment{
 		Filename:    at.Filename,
 		ContentType: at.ContentType,
-		Data:        at.Data,
-	}
+		Data:        data,
+	}, err
 }
 
 // EmbeddedFile with json attributes
 type EmbeddedFile struct {
-	CID         string    `json:"cid"`
-	ContentType string    `json:"contentType"`
-	Data        io.Reader `json:"-"`
+	M *sync.Mutex `json:"-"`
+
+	CID         string `json:"cid"`
+	ContentType string `json:"contentType"`
+	Data        []byte `json:"-"`
 }
 
 // ConvertEmbeddedFile converts parsemail.EmbeddedFile to a EmbeddedFile
-func ConvertEmbeddedFile(eb parsemail.EmbeddedFile) EmbeddedFile {
+func ConvertEmbeddedFile(eb parsemail.EmbeddedFile) (EmbeddedFile, error) {
+	data, err := io.ReadAll(eb.Data)
 	return EmbeddedFile{
+		M:           &sync.Mutex{},
 		CID:         eb.CID,
 		ContentType: eb.ContentType,
-		Data:        eb.Data,
-	}
+		Data:        data,
+	}, err
 }
 
 // Email contains a single email
@@ -97,8 +103,7 @@ type Email struct {
 	ResentBcc       []*Address `json:"resentBcc"`
 	ResentMessageID string     `json:"resentMessageId"`
 
-	ContentType string    `json:"contentType"`
-	Content     io.Reader `json:"-"`
+	ContentType string `json:"contentType"`
 
 	HTMLBody string `json:"htmlBody"`
 	TextBody string `json:"textBody"`
@@ -108,7 +113,17 @@ type Email struct {
 }
 
 // ConvertEmail converts parsemail.Email to a Email
-func ConvertEmail(bluemondayPolicy *bluemonday.Policy, ulid ulid.ULID, em parsemail.Email, realDate time.Time, realFrom, realTo string) Email {
+func ConvertEmail(bluemondayPolicy *bluemonday.Policy, ulid ulid.ULID, em parsemail.Email, realDate time.Time, realFrom, realTo string) (Email, error) {
+	attachments, err := ConvertAttachmentList(em.Attachments)
+	if err != nil {
+		return Email{}, err
+	}
+
+	embeddedFiles, err := ConvertEmbeddedFileList(em.EmbeddedFiles)
+	if err != nil {
+		return Email{}, err
+	}
+
 	resp := Email{
 		ID:              ulid,
 		RealDate:        realDate,
@@ -132,11 +147,10 @@ func ConvertEmail(bluemondayPolicy *bluemonday.Policy, ulid ulid.ULID, em parsem
 		ResentBcc:       ConvertAddressList(em.ResentBcc),
 		ResentMessageID: em.ResentMessageID,
 		ContentType:     em.ContentType,
-		Content:         em.Content,
 		HTMLBody:        bluemondayPolicy.Sanitize(em.HTMLBody),
 		TextBody:        em.TextBody,
-		Attachments:     ConvertAttachmentList(em.Attachments),
-		EmbeddedFiles:   ConvertEmbeddedFileList(em.EmbeddedFiles),
+		Attachments:     attachments,
+		EmbeddedFiles:   embeddedFiles,
 	}
 
 	if resp.Sender == nil && realFrom != "" {
@@ -147,7 +161,7 @@ func ConvertEmail(bluemondayPolicy *bluemonday.Policy, ulid ulid.ULID, em parsem
 		resp.To = []*Address{{Address: realTo}}
 	}
 
-	return resp
+	return resp, nil
 }
 
 // ConvertAddressList converts a list of mail.Address to a list of Address
@@ -167,37 +181,37 @@ func ConvertAddressList(adList []*mail.Address) []*Address {
 }
 
 // ConvertAttachmentList converts a list of parsemail.Attachment to a list of Attachment
-func ConvertAttachmentList(atList []parsemail.Attachment) []Attachment {
+func ConvertAttachmentList(atList []parsemail.Attachment) ([]Attachment, error) {
 	if atList == nil {
-		return nil
+		return nil, nil
 	}
 
-	var result []Attachment
-	for _, at := range atList {
-		result = append(result, Attachment{
-			Filename:    at.Filename,
-			ContentType: at.ContentType,
-			Data:        at.Data,
-		})
+	var err error
+	results := make([]Attachment, len(atList))
+	for idx, at := range atList {
+		results[idx], err = ConvertAttachment(at)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return result
+	return results, nil
 }
 
 // ConvertEmbeddedFileList converts a list of parsemail.EmbeddedFile to a list of EmbeddedFile
-func ConvertEmbeddedFileList(ebList []parsemail.EmbeddedFile) []EmbeddedFile {
+func ConvertEmbeddedFileList(ebList []parsemail.EmbeddedFile) ([]EmbeddedFile, error) {
 	if ebList == nil {
-		return nil
+		return nil, nil
 	}
 
-	var result []EmbeddedFile
-	for _, eb := range ebList {
-		result = append(result, EmbeddedFile{
-			CID:         eb.CID,
-			ContentType: eb.ContentType,
-			Data:        eb.Data,
-		})
+	var err error
+	results := make([]EmbeddedFile, len(ebList))
+	for idx, eb := range ebList {
+		results[idx], err = ConvertEmbeddedFile(eb)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return result
+	return results, nil
 }
 
 // EmailHint contains the hints of a single email
