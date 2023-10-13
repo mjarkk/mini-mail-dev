@@ -1,8 +1,28 @@
-import { Match, Switch, createEffect, createSignal } from "solid-js"
+import {
+	Match,
+	Switch,
+	createContext,
+	createEffect,
+	createSignal,
+} from "solid-js"
 import type { EmailHint } from "../email"
 import { EmailsList, EmailsListProps } from "./EmailRow"
 import { Accessor } from "solid-js"
 import { Email } from "./Email"
+
+interface SelectedEmailActions {
+	delete: () => void
+	select: (e: EmailHint) => void
+}
+
+type SelectedEmailContextType = [
+	Accessor<EmailHint | undefined>,
+	SelectedEmailActions,
+]
+
+export const SelectedEmailContext = createContext<SelectedEmailContextType>(
+	[] as unknown as SelectedEmailContextType,
+)
 
 export function App() {
 	const [emails, setEmails] = createSignal<Array<EmailHint>>()
@@ -27,36 +47,38 @@ export function App() {
 		await fetchEmails()
 	}
 
+	const selectedEmailContext: () => SelectedEmailContextType = () => [
+		selectedEmail,
+		{
+			delete: deleteSelected,
+			select: setSelectedEmail,
+		},
+	]
+
 	return (
-		<div h-full w-full overflow-hidden>
-			<Switch fallback={<div>Loading...</div>}>
-				<Match when={emails() !== undefined && selectedEmail() !== undefined}>
-					<LayoutWithEmail
-						emails={emails}
-						selectedEmail={() => selectedEmail()!}
-						setSelectedEmail={setSelectedEmail}
-						ondelete={deleteSelected}
-					/>
-				</Match>
-				<Match when={emails() !== undefined}>
-					<EmailsList emails={emails} setSelectedEmail={setSelectedEmail} />
-				</Match>
-			</Switch>
-		</div>
+		<SelectedEmailContext.Provider value={selectedEmailContext()}>
+			<div h-full w-full overflow-hidden>
+				<Switch fallback={<div>Loading...</div>}>
+					<Match when={emails() !== undefined && selectedEmail() !== undefined}>
+						<LayoutWithEmail
+							emails={emails}
+							selectedEmail={() => selectedEmail()!}
+						/>
+					</Match>
+					<Match when={emails() !== undefined}>
+						<EmailsList emails={emails} />
+					</Match>
+				</Switch>
+			</div>
+		</SelectedEmailContext.Provider>
 	)
 }
 
 interface LayoutWithEmailProps extends EmailsListProps {
 	selectedEmail: Accessor<EmailHint>
-	ondelete?: () => void
 }
 
-function LayoutWithEmail({
-	emails,
-	selectedEmail,
-	setSelectedEmail,
-	ondelete,
-}: LayoutWithEmailProps) {
+function LayoutWithEmail({ emails }: LayoutWithEmailProps) {
 	return (
 		<div flex items-stretch>
 			<div
@@ -69,10 +91,10 @@ function LayoutWithEmail({
 				border-r-solid
 				border-zinc-700
 			>
-				<EmailsList emails={emails} setSelectedEmail={setSelectedEmail} />
+				<EmailsList emails={emails} />
 			</div>
 			<div h-screen overflow-y-auto self-stretch flex-1>
-				<Email email={selectedEmail} ondelete={ondelete} />
+				<Email />
 			</div>
 		</div>
 	)

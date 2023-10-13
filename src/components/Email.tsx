@@ -5,16 +5,17 @@ import {
 	createEffect,
 	createMemo,
 	createSignal,
+	useContext,
 } from "solid-js"
 import type { Address, Email, EmailHint } from "../email"
 import { EmailAddr } from "./EmailAddress"
+import { SelectedEmailContext } from "./App"
 
-export interface EmailProps {
-	email: Accessor<EmailHint>
-	ondelete?: () => void
-}
+export interface EmailProps {}
 
-export function Email({ email, ondelete }: EmailProps) {
+export function Email({}: EmailProps) {
+	const [selectedEmail] = useContext(SelectedEmailContext)
+
 	const [fullEmail, setFullEmail] = createSignal<Email>()
 
 	const getFullMail = async (id: string) => {
@@ -25,14 +26,17 @@ export function Email({ email, ondelete }: EmailProps) {
 	}
 
 	createEffect(() => {
-		getFullMail(email().id)
+		const email = selectedEmail()
+		if (email) getFullMail(email.id)
 	})
 
-	const fullOrPartialEmail = createMemo(() => fullEmail() ?? email())
+	const fullOrPartialEmail = createMemo(
+		() => fullEmail() ?? selectedEmail() ?? ({} as EmailHint),
+	)
 
 	return (
 		<div>
-			<Header email={fullOrPartialEmail} ondelete={ondelete} />
+			<Header email={fullOrPartialEmail} />
 			<Attachments />
 			<Body email={fullOrPartialEmail} />
 		</div>
@@ -41,10 +45,11 @@ export function Email({ email, ondelete }: EmailProps) {
 
 interface HeaderProps {
 	email: Accessor<EmailHint | Email>
-	ondelete?: () => void
 }
 
-function Header({ email, ondelete }: HeaderProps) {
+function Header({ email }: HeaderProps) {
+	const [_, selectedEmailActions] = useContext(SelectedEmailContext)
+
 	const fields = createMemo(() => {
 		const e = email()
 
@@ -95,7 +100,7 @@ function Header({ email, ondelete }: HeaderProps) {
 					{email().subject}
 				</h2>
 				<div>
-					<button onclick={ondelete}>Delete</button>
+					<button onclick={selectedEmailActions.delete}>Delete</button>
 				</div>
 			</div>
 			<div border-0 border-b border-b-solid border-zinc-800 p-4 flex flex-wrap>
@@ -114,6 +119,7 @@ function Header({ email, ondelete }: HeaderProps) {
 interface AttachmentsProps {}
 
 function Attachments({}: AttachmentsProps) {
+	// TODO: Implement me
 	return <div></div>
 }
 
