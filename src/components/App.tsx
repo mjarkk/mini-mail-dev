@@ -13,6 +13,7 @@ import { Email } from "./Email"
 interface SelectedEmailActions {
 	delete: () => void
 	select: (e: EmailHint) => void
+	deSelect: () => void
 }
 
 type SelectedEmailContextType = [
@@ -52,6 +53,7 @@ export function App() {
 		{
 			delete: deleteSelected,
 			select: setSelectedEmail,
+			deSelect: () => setSelectedEmail(undefined),
 		},
 	]
 

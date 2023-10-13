@@ -1,6 +1,14 @@
-import { For, Show, createMemo, useContext } from "solid-js"
+import {
+	For,
+	Match,
+	Show,
+	Switch,
+	createMemo,
+	createSignal,
+	useContext,
+} from "solid-js"
 import { EmailHint } from "../email"
-import { Accessor } from "solid-js"
+import { Accessor, onMount, onCleanup } from "solid-js"
 import { EmailAddr } from "./EmailAddress"
 import { SelectedEmailContext } from "./App"
 
@@ -10,9 +18,32 @@ export interface EmailsListProps {
 
 export function EmailsList({ emails }: EmailsListProps) {
 	const [selectedEmail, selectedEmailActions] = useContext(SelectedEmailContext)
+	const [display, setDisplay] = createSignal<"lg" | "md" | "sm">()
+	const getDisplayValue = (w: number) => {
+		if (!w) return undefined
+		else if (w > 900) return "lg"
+		else if (w > 600) return "md"
+		else return "sm"
+	}
+
+	let ref: HTMLDivElement | null = null
+
+	const onResize = () => {
+		const width = ref?.getBoundingClientRect().width
+		if (width) setDisplay(getDisplayValue(width))
+	}
+
+	onMount(() => {
+		window.addEventListener("resize", onResize)
+		onResize()
+	})
+
+	onCleanup(() => {
+		window.removeEventListener("resize", onResize)
+	})
 
 	return (
-		<div>
+		<div ref={(el) => (ref = el)}>
 			<h1 px-3>Emails</h1>
 			<For
 				each={emails()}
@@ -22,25 +53,34 @@ export function EmailsList({ emails }: EmailsListProps) {
 					</p>
 				}
 			>
-				{(email) => (
-					<EmailRow
-						selected={() => email.id == selectedEmail()?.id}
-						email={email}
-						onClick={() => selectedEmailActions.select(email)}
-					/>
-				)}
+				{(email) => {
+					const selected = () => email.id == selectedEmail()?.id
+					return (
+						<EmailRow
+							display={() => display()}
+							selected={selected}
+							email={email}
+							onClick={() =>
+								selected()
+									? selectedEmailActions.deSelect()
+									: selectedEmailActions.select(email)
+							}
+						/>
+					)
+				}}
 			</For>
 		</div>
 	)
 }
 
 export interface EmailRowProps {
+	display: Accessor<"sm" | "md" | "lg" | undefined>
 	email: EmailHint
 	onClick?: () => void
 	selected: Accessor<boolean>
 }
 
-export function EmailRow({ selected, email, onClick }: EmailRowProps) {
+export function EmailRow({ display, selected, email, onClick }: EmailRowProps) {
 	const firstFrom = () => email.from[0]
 
 	const date = createMemo(() => {
@@ -63,28 +103,86 @@ export function EmailRow({ selected, email, onClick }: EmailRowProps) {
 			bg={selected() ? "zinc-800" : "zinc-950"}
 			rounded-none
 		>
-			<p m-0 truncate>
-				<Show
-					when={firstFrom()}
-					fallback={<span text-zinc-500>Unknown address</span>}
-				>
-					<EmailAddr address={firstFrom} />
-				</Show>
-			</p>
-			<p m-0 mt-0 truncate>
-				<span font-bold text-zinc-200>
-					{email.subject}
-				</span>
-				<Show when={email.textBodyHint}>
-					<span font-normal text-zinc-400>
-						{" "}
-						- {email.textBodyHint}
-					</span>
-				</Show>
-			</p>
-			<p m-0 mt-1 text-zinc-500>
-				{date()}
-			</p>
+			<Switch>
+				<Match when={display() === "lg"}>
+					<div flex items-center>
+						<p m-0 truncate w="[300px]">
+							<Show
+								when={firstFrom()}
+								fallback={<span text-zinc-500>Unknown address</span>}
+							>
+								<EmailAddr address={firstFrom} />
+							</Show>
+						</p>
+						<p my-0 mx-3 truncate flex-1>
+							<span font-bold text-zinc-200>
+								{email.subject}
+							</span>
+							<Show when={email.textBodyHint}>
+								<span font-normal text-zinc-400>
+									{" "}
+									- {email.textBodyHint}
+								</span>
+							</Show>
+						</p>
+						<MailDate date={date} />
+					</div>
+				</Match>
+				<Match when={display() === "md"}>
+					<div flex items-center>
+						<p m-0 truncate flex-1>
+							<Show
+								when={firstFrom()}
+								fallback={<span text-zinc-500>Unknown address</span>}
+							>
+								<EmailAddr address={firstFrom} />
+							</Show>
+						</p>
+						<MailDate date={date} />
+					</div>
+					<p m-0 mt-0 truncate>
+						<span font-bold text-zinc-200>
+							{email.subject}
+						</span>
+						<Show when={email.textBodyHint}>
+							<span font-normal text-zinc-400>
+								{" "}
+								- {email.textBodyHint}
+							</span>
+						</Show>
+					</p>
+				</Match>
+				<Match when={display() === "sm"}>
+					<p m-0 truncate>
+						<Show
+							when={firstFrom()}
+							fallback={<span text-zinc-500>Unknown address</span>}
+						>
+							<EmailAddr address={firstFrom} />
+						</Show>
+					</p>
+					<p m-0 mb-1 truncate>
+						<span font-bold text-zinc-200>
+							{email.subject}
+						</span>
+						<Show when={email.textBodyHint}>
+							<span font-normal text-zinc-400>
+								{" "}
+								- {email.textBodyHint}
+							</span>
+						</Show>
+					</p>
+					<MailDate date={date} />
+				</Match>
+			</Switch>
 		</button>
+	)
+}
+
+function MailDate({ date }: { date: Accessor<string> }) {
+	return (
+		<p m-0 text-zinc-500 text="13px" w="[130px]">
+			{date()}
+		</p>
 	)
 }
