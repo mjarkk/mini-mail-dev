@@ -2,3 +2,23 @@ body {
     background-color: black;
     color: white;
 }
+
+button {
+    border-radius: 4px;
+    padding-left: 16px;
+    padding-right: 16px;
+    cursor: pointer;
+    @apply bg-zinc-900;
+    @apply outline-sky-500;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+    transition-property: background-color, outline;
+}
+
+button:hover {
+    @apply bg-zinc-800;
+}
+
+button:focus {
+    @apply outline outline-sky-500;
+}

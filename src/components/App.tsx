@@ -8,11 +8,24 @@ export function App() {
 	const [emails, setEmails] = createSignal<Array<EmailHint>>()
 	const [selectedEmail, setSelectedEmail] = createSignal<EmailHint>()
 
-	createEffect(async () => {
+	const fetchEmails = async () => {
 		const response = await fetch("http://localhost:3000/api/emails")
 		const data: Array<EmailHint> = await response.json()
 		setEmails(data)
-	})
+	}
+
+	createEffect(fetchEmails)
+
+	const deleteSelected = async () => {
+		const id = selectedEmail()?.id
+		if (!id) return
+
+		setSelectedEmail(undefined)
+		await fetch("http://localhost:3000/api/emails/" + id, {
+			method: "DELETE",
+		})
+		await fetchEmails()
+	}
 
 	return (
 		<div h-full w-full overflow-hidden>
@@ -22,6 +35,7 @@ export function App() {
 						emails={emails}
 						selectedEmail={() => selectedEmail()!}
 						setSelectedEmail={setSelectedEmail}
+						ondelete={deleteSelected}
 					/>
 				</Match>
 				<Match when={emails() !== undefined}>
@@ -34,12 +48,14 @@ export function App() {
 
 interface LayoutWithEmailProps extends EmailsListProps {
 	selectedEmail: Accessor<EmailHint>
+	ondelete?: () => void
 }
 
 function LayoutWithEmail({
 	emails,
 	selectedEmail,
 	setSelectedEmail,
+	ondelete,
 }: LayoutWithEmailProps) {
 	return (
 		<div flex items-stretch>
@@ -56,7 +72,7 @@ function LayoutWithEmail({
 				<EmailsList emails={emails} setSelectedEmail={setSelectedEmail} />
 			</div>
 			<div h-screen overflow-y-auto self-stretch flex-1>
-				<Email email={selectedEmail} />
+				<Email email={selectedEmail} ondelete={ondelete} />
 			</div>
 		</div>
 	)

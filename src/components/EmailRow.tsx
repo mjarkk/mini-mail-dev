@@ -1,4 +1,4 @@
-import { For, Show, Switch } from "solid-js"
+import { For, Show } from "solid-js"
 import { EmailHint } from "../email"
 import { Accessor } from "solid-js"
 import { EmailAddr } from "./EmailAddress"
@@ -12,7 +12,14 @@ export function EmailsList({ emails, setSelectedEmail }: EmailsListProps) {
 	return (
 		<div>
 			<h1 px-3>Emails</h1>
-			<For each={emails()}>
+			<For
+				each={emails()}
+				fallback={
+					<p p-3 text-zinc-400>
+						No emails
+					</p>
+				}
+			>
 				{(email) => (
 					<EmailRow email={email} onClick={() => setSelectedEmail(email)} />
 				)}

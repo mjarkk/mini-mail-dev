@@ -11,9 +11,10 @@ import { EmailAddr } from "./EmailAddress"
 
 export interface EmailProps {
 	email: Accessor<EmailHint>
+	ondelete?: () => void
 }
 
-export function Email({ email }: EmailProps) {
+export function Email({ email, ondelete }: EmailProps) {
 	const [fullEmail, setFullEmail] = createSignal<Email>()
 
 	const getFullMail = async (id: string) => {
@@ -31,7 +32,7 @@ export function Email({ email }: EmailProps) {
 
 	return (
 		<div>
-			<Header email={fullOrPartialEmail} />
+			<Header email={fullOrPartialEmail} ondelete={ondelete} />
 			<Attachments />
 			<Body email={fullOrPartialEmail} />
 		</div>
@@ -40,9 +41,10 @@ export function Email({ email }: EmailProps) {
 
 interface HeaderProps {
 	email: Accessor<EmailHint | Email>
+	ondelete?: () => void
 }
 
-function Header({ email }: HeaderProps) {
+function Header({ email, ondelete }: HeaderProps) {
 	const fields = createMemo(() => {
 		const e = email()
 
@@ -93,7 +95,7 @@ function Header({ email }: HeaderProps) {
 					{email().subject}
 				</h2>
 				<div>
-					<button>Delete</button>
+					<button onclick={ondelete}>Delete</button>
 				</div>
 			</div>
 			<div border-0 border-b border-b-solid border-zinc-800 p-4 flex flex-wrap>
@@ -131,8 +133,6 @@ function Body({ email }: BodyProps) {
 		if ("textBodyHint" in e && e.textBodyHint) return e.textBodyHint
 		return ""
 	}
-
-	// TODO: Fix remove everything scriptable from the email html body
 
 	return (
 		<div p-4>

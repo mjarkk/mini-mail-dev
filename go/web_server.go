@@ -65,5 +65,23 @@ func StartWebserver() {
 		return errors.New("email not found")
 	})
 
+	emailsGroup.Delete("/:id", func(c *fiber.Ctx) error {
+		id, err := ulid.Parse(c.Params("id"))
+		if err != nil {
+			return err
+		}
+
+		emailsLock.Lock()
+		for i, email := range emails {
+			if email.ID == id {
+				emails = append(emails[:i], emails[i+1:]...)
+				break
+			}
+		}
+		emailsLock.Unlock()
+
+		return c.SendStatus(fiber.StatusNoContent)
+	})
+
 	log.Fatal(app.Listen(":3000"))
 }
