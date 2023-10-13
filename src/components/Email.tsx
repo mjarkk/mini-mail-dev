@@ -1,7 +1,9 @@
 import {
 	Accessor,
 	For,
+	Match,
 	Show,
+	Switch,
 	createEffect,
 	createMemo,
 	createSignal,
@@ -10,6 +12,10 @@ import {
 import type { Address, Email, EmailHint } from "../email"
 import { EmailAddr } from "./EmailAddress"
 import { SelectedEmailContext } from "./App"
+import IconImage from "~icons/material-symbols/image-outline"
+import IconFilePresent from "~icons/material-symbols/file-present-outline"
+import IconPictureAsPdf from "~icons/material-symbols/picture-as-pdf-outline"
+import { AttachmentButton } from "./AttachmentButton"
 
 export interface EmailProps {}
 
@@ -37,7 +43,7 @@ export function Email({}: EmailProps) {
 	return (
 		<div>
 			<Header email={fullOrPartialEmail} />
-			<Attachments />
+			<Attachments email={fullOrPartialEmail} />
 			<Body email={fullOrPartialEmail} />
 		</div>
 	)
@@ -116,11 +122,25 @@ function Header({ email }: HeaderProps) {
 	)
 }
 
-interface AttachmentsProps {}
+interface AttachmentsProps {
+	email: Accessor<EmailHint | Email>
+}
 
-function Attachments({}: AttachmentsProps) {
-	// TODO: Implement me
-	return <div></div>
+function Attachments({ email }: AttachmentsProps) {
+	return (
+		<Show when={email().attachments && email().attachments.length > 0}>
+			<div border-0 border-b border-b-solid border-zinc-800 p-4>
+				<p m-0 text-zinc-500>
+					Attachments:
+				</p>
+				<div flex flex-wrap gap-2 mt-1>
+					<For each={email().attachments}>
+						{(attachment) => <AttachmentButton {...attachment} />}
+					</For>
+				</div>
+			</div>
+		</Show>
+	)
 }
 
 interface BodyProps {
