@@ -90,6 +90,18 @@ func TestSendingMail() {
 
 	mustSendEmail(smtpClient, email)
 
+	// nr := uint(0)
+	// for {
+	// 	time.Sleep(time.Millisecond * 10)
+	// 	email := mail.NewMSG().
+	// 		SetFrom(fmt.Sprintf("Stress test %d <stress-%d@example.org>", nr, nr)).
+	// 		AddTo(fmt.Sprintf("stress-recipient-%d@example.net", nr)).
+	// 		SetSubject("Test sending mail").
+	// 		AddAlternative(mail.TextPlain, fmt.Sprintf("Hello world!\nThis is a stress test #%d\n", nr))
+	// 	mightSendEmail(smtpClient, email)
+	// 	nr++
+	// }
+
 	smtpClient.Close()
 }
 
@@ -101,5 +113,16 @@ func mustSendEmail(smtpClient *mail.SMTPClient, email *mail.Email) {
 	err := email.Send(smtpClient)
 	if err != nil {
 		log.Fatalln("Failed to send mail", err)
+	}
+}
+
+func mightSendEmail(smtpClient *mail.SMTPClient, email *mail.Email) {
+	if email.Error != nil {
+		log.Fatalln(email.Error)
+	}
+
+	err := email.Send(smtpClient)
+	if err != nil {
+		fmt.Println("WARN: Failed to send mail", err)
 	}
 }

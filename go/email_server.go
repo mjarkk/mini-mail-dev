@@ -9,6 +9,7 @@ import (
 
 	"github.com/DusanKasan/parsemail"
 	"github.com/emersion/go-smtp"
+	"github.com/fasthttp/websocket"
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/oklog/ulid/v2"
 )
@@ -99,6 +100,10 @@ func (s *Session) Data(r io.Reader) error {
 		emails = emails[len(emails)-100:]
 	}
 	emailsLock.Unlock()
+
+	for _, c := range websocketConnections {
+		c.WriteMessage(websocket.TextMessage, []byte("new-email"))
+	}
 
 	return nil
 }

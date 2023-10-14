@@ -4,11 +4,13 @@ import {
 	createContext,
 	createEffect,
 	createSignal,
+	onCleanup,
 } from "solid-js"
 import type { EmailHint } from "../email"
 import { EmailsList, EmailsListProps } from "./EmailRow"
 import { Accessor } from "solid-js"
 import { Email } from "./Email"
+import { EmailEventsWebsocket } from "../services/websocket"
 
 interface SelectedEmailActions {
 	delete: () => void
@@ -25,17 +27,49 @@ export const SelectedEmailContext = createContext<SelectedEmailContextType>(
 	[] as unknown as SelectedEmailContextType,
 )
 
+function throttleFn(fn: () => Promise<void>): () => Promise<void> {
+	let running = false
+	let reRun = false
+	return async () => {
+		if (running) {
+			reRun = true
+			return
+		}
+		running = true
+		reRun = true
+		while (reRun) {
+			reRun = false
+			try {
+				await fn()
+			} catch (e) {
+				console.error(e)
+			}
+		}
+		await new Promise((res) => setTimeout(res, 500))
+		running = false
+	}
+}
+
 export function App() {
 	const [emails, setEmails] = createSignal<Array<EmailHint>>()
 	const [selectedEmail, setSelectedEmail] = createSignal<EmailHint>()
 
-	const fetchEmails = async () => {
+	const fetchEmails = throttleFn(async () => {
 		const response = await fetch("http://localhost:3000/api/emails")
 		const data: Array<EmailHint> = await response.json()
 		setEmails(data)
-	}
+	})
 
-	createEffect(fetchEmails)
+	const emailsWebsocket = new EmailEventsWebsocket(fetchEmails)
+
+	createEffect(() => {
+		fetchEmails()
+		emailsWebsocket.start()
+	})
+
+	onCleanup(() => {
+		emailsWebsocket.close()
+	})
 
 	const deleteSelected = async () => {
 		const id = selectedEmail()?.id
@@ -60,15 +94,19 @@ export function App() {
 	return (
 		<SelectedEmailContext.Provider value={selectedEmailContext()}>
 			<div h-full w-full overflow-hidden>
-				<Switch fallback={<div>Loading...</div>}>
+				<Switch
+					fallback={
+						<EmailsList
+							emails={() => emails() ?? []}
+							loading={() => !emails()}
+						/>
+					}
+				>
 					<Match when={emails() !== undefined && selectedEmail() !== undefined}>
 						<LayoutWithEmail
 							emails={emails}
 							selectedEmail={() => selectedEmail()!}
 						/>
-					</Match>
-					<Match when={emails() !== undefined}>
-						<EmailsList emails={emails} />
 					</Match>
 				</Switch>
 			</div>

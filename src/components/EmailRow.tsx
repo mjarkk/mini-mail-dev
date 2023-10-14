@@ -14,9 +14,10 @@ import { SelectedEmailContext } from "./App"
 
 export interface EmailsListProps {
 	emails: Accessor<Array<EmailHint> | undefined>
+	loading?: Accessor<boolean>
 }
 
-export function EmailsList({ emails }: EmailsListProps) {
+export function EmailsList({ emails, loading }: EmailsListProps) {
 	const [selectedEmail, selectedEmailActions] = useContext(SelectedEmailContext)
 	const [display, setDisplay] = createSignal<"lg" | "md" | "sm">()
 	const getDisplayValue = (w: number) => {
@@ -45,30 +46,39 @@ export function EmailsList({ emails }: EmailsListProps) {
 	return (
 		<div ref={(el) => (ref = el)}>
 			<h1 px-3>Emails</h1>
-			<For
-				each={emails()}
+			<Show
+				when={!loading || !loading()}
 				fallback={
 					<p p-3 text-zinc-400>
-						No emails
+						Loading...
 					</p>
 				}
 			>
-				{(email) => {
-					const selected = () => email.id == selectedEmail()?.id
-					return (
-						<EmailRow
-							display={() => display()}
-							selected={selected}
-							email={email}
-							onClick={() =>
-								selected()
-									? selectedEmailActions.deSelect()
-									: selectedEmailActions.select(email)
-							}
-						/>
-					)
-				}}
-			</For>
+				<For
+					each={emails()}
+					fallback={
+						<p p-3 text-zinc-400>
+							No emails
+						</p>
+					}
+				>
+					{(email) => {
+						const selected = () => email.id == selectedEmail()?.id
+						return (
+							<EmailRow
+								display={() => display()}
+								selected={selected}
+								email={email}
+								onClick={() =>
+									selected()
+										? selectedEmailActions.deSelect()
+										: selectedEmailActions.select(email)
+								}
+							/>
+						)
+					}}
+				</For>
+			</Show>
 		</div>
 	)
 }
