@@ -2,7 +2,7 @@
 
 > **This project is work in progress!**
 
-![Screenshot](/screenshot.png?raw=true "Screnshot")
+![Screenshot](/screenshot.jpg?raw=true "Screnshot")
 
 A alternative take on a development testing email server.
 
