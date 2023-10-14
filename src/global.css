@@ -22,3 +22,8 @@ button:hover {
 button:focus {
     @apply outline outline-sky-500;
 }
+
+button:disabled {
+    cursor: default;
+    @apply bg-zinc-900;
+}

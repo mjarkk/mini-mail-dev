@@ -154,7 +154,7 @@ export function EmailRow({ display, selected, email, onClick }: EmailRowProps) {
 function From({ from }: { from: Accessor<Address | undefined> }) {
 	return (
 		<Show when={from()} fallback={<span text-zinc-500>Unknown address</span>}>
-			<EmailAddr address={() => from()!} />
+			{(from) => <EmailAddr address={from} />}
 		</Show>
 	)
 }

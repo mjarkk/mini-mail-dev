@@ -1,10 +1,13 @@
 import {
 	Accessor,
 	For,
+	Match,
 	Show,
+	Switch,
 	createEffect,
 	createMemo,
 	createSignal,
+	lazy,
 	useContext,
 } from "solid-js"
 import type { Address, EmailBase, EmailRemainder } from "../email"
@@ -12,6 +15,8 @@ import { EmailAddr } from "./EmailAddress"
 import { SelectedEmailContext } from "./App"
 import { AttachmentButton } from "./AttachmentButton"
 import { fetch } from "../services/fetch"
+
+const Code = lazy(() => import("./Code").then((m) => ({ default: m.Code })))
 
 export interface EmailProps {}
 
@@ -176,11 +181,70 @@ function Body({ emailRemainder }: BodyProps) {
 					</>
 				}
 			>
-				<div innerHTML={htmlBody()!} />
-				<ContentTypeHint kind="text/html" />
+				{(html) => <HtmlBody html={html} plain={fallbackBody} />}
 			</Show>
 			{/* <pre>{JSON.stringify(email(), null, 4)}</pre> */}
 		</div>
+	)
+}
+
+function HtmlBody({
+	html,
+	plain,
+}: {
+	html: Accessor<string>
+	plain: Accessor<string>
+}) {
+	const [view, setView] = createSignal<"preview" | "plain" | "html">("preview")
+
+	const isPreview = () => view() === "preview"
+	const isPlain = () => view() === "plain"
+	const isHtml = () => view() === "html"
+
+	return (
+		<>
+			<div flex gap-1>
+				<button
+					onclick={() => setView("preview")}
+					text={isPreview() ? "indigo-400" : "zinc-200"}
+				>
+					Preview
+				</button>
+				<button
+					onclick={() => setView("plain")}
+					text={isPlain() ? "indigo-400" : "zinc-200"}
+				>
+					Plain text
+				</button>
+				<button
+					onclick={() => setView("html")}
+					text={isHtml() ? "indigo-400" : "zinc-200"}
+				>
+					HTML
+				</button>
+			</div>
+			<Switch>
+				<Match when={isPreview()}>
+					<div innerHTML={html()} />
+					<ContentTypeHint kind="text/html" />
+				</Match>
+				<Match when={isPlain()}>
+					<Show
+						when={plain()}
+						fallback={
+							<p text-zinc-500>
+								This email does not have a plain text fallback 😞
+							</p>
+						}
+					>
+						<pre innerText={plain()} />
+					</Show>
+				</Match>
+				<Match when={isHtml()}>
+					<Code lang="xml" code={html} />
+				</Match>
+			</Switch>
+		</>
 	)
 }
 

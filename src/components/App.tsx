@@ -4,14 +4,16 @@ import {
 	createContext,
 	createEffect,
 	createSignal,
+	lazy,
 	onCleanup,
 } from "solid-js"
 import type { EmailBase } from "../email"
 import { EmailsList, EmailsListProps } from "./EmailRow"
 import { Accessor } from "solid-js"
-import { Email } from "./Email"
 import { EmailEventsWebsocket } from "../services/websocket"
 import { fetch } from "../services/fetch"
+
+const Email = lazy(() => import("./Email").then((m) => ({ default: m.Email })))
 
 interface SelectedEmailActions {
 	delete: () => void
