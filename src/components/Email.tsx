@@ -106,7 +106,9 @@ function Header({ email }: HeaderProps) {
 					{email().subject}
 				</h2>
 				<div>
-					<button onclick={selectedEmailActions.delete}>Delete</button>
+					<button border border-zinc-400 onclick={selectedEmailActions.delete}>
+						Delete
+					</button>
 				</div>
 			</div>
 			<div border-0 border-b border-b-solid border-zinc-800 p-4 flex flex-wrap>
