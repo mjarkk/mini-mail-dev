@@ -11,6 +11,5 @@ var dist embed.FS
 
 func main() {
 	go StartWebserver(dist)
-	go TestSendingMail()
 	StartEmailServer()
 }

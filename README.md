@@ -31,6 +31,9 @@ Now you can start mini-mail-dev using
 go run .
 # In another terminal tab run:
 npm run dev
+
+# For sending a few testing mails to the server run
+go run test/test_email.go
 ```
 
-_The javascript file are hot module reloaded, the go files are not reloaded on changes made to them_
+_The javascript file are hot module reloaded only when going to [localhost:**3001**](http://localhost:3001), the go files are not reloaded on changes made to them_

@@ -1,4 +1,4 @@
-package src
+package main
 
 import (
 	"crypto/tls"
@@ -11,10 +11,7 @@ import (
 	mail "github.com/xhit/go-simple-mail/v2"
 )
 
-// TestSendingMail test sending some mock emails
-func TestSendingMail() {
-	time.Sleep(time.Second)
-
+func main() {
 	client := mail.NewSMTPClient()
 
 	client.Host = "localhost"

@@ -95,7 +95,13 @@ func StartWebserver(dist embed.FS) {
 	}))
 
 	apiGroup.Get("/emails", func(c *fiber.Ctx) error {
-		return c.JSON(emails)
+		emailsCopy := make([]*Email, len(emails))
+
+		for idx := 0; idx < len(emails); idx++ {
+			emailsCopy[len(emails)-1-idx] = &emails[idx]
+		}
+
+		return c.JSON(emailsCopy)
 	})
 
 	apiGroup.Get("/emails/:id/remainder", func(c *fiber.Ctx) error {
