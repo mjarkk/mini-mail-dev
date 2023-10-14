@@ -7,13 +7,13 @@ import {
 	createSignal,
 	useContext,
 } from "solid-js"
-import { Address, EmailHint } from "../email"
+import { Address, EmailBase } from "../email"
 import { Accessor, onMount, onCleanup } from "solid-js"
 import { EmailAddr } from "./EmailAddress"
 import { SelectedEmailContext } from "./App"
 
 export interface EmailsListProps {
-	emails: Accessor<Array<EmailHint> | undefined>
+	emails: Accessor<Array<EmailBase> | undefined>
 	loading?: Accessor<boolean>
 }
 
@@ -85,7 +85,7 @@ export function EmailsList({ emails, loading }: EmailsListProps) {
 
 export interface EmailRowProps {
 	display: Accessor<"sm" | "md" | "lg" | undefined>
-	email: EmailHint
+	email: EmailBase
 	onClick?: () => void
 	selected: Accessor<boolean>
 }
@@ -112,6 +112,7 @@ export function EmailRow({ display, selected, email, onClick }: EmailRowProps) {
 			p-3
 			bg={selected() ? "zinc-800" : "zinc-950"}
 			rounded-none
+			text-zinc-500
 		>
 			<Switch>
 				<Match when={display() === "lg"}>
@@ -132,7 +133,7 @@ export function EmailRow({ display, selected, email, onClick }: EmailRowProps) {
 						</p>
 						<MailDate date={date} />
 					</div>
-					<p m-0 mt-0 truncate>
+					<p m-0 truncate>
 						<ContentHint email={() => email} />
 					</p>
 				</Match>
@@ -158,25 +159,30 @@ function From({ from }: { from: Accessor<Address | undefined> }) {
 	)
 }
 
-function ContentHint({ email }: { email: Accessor<EmailHint> }) {
+function ContentHint({ email }: { email: Accessor<EmailBase> }) {
 	return (
 		<>
 			<span font-bold text-zinc-200>
 				{email().subject}
 			</span>
-			<Show when={email().textBodyHint}>
+			<Show when={email().bodyHint}>
 				<span font-normal text-zinc-400>
 					{" "}
-					- {email().textBodyHint}
+					- {email().bodyHint}
 				</span>
 			</Show>
 		</>
 	)
 }
 
-function MailDate({ date }: { date: Accessor<string> }) {
+interface MailDateProps {
+	date: Accessor<string>
+	fullWidth?: boolean
+}
+
+function MailDate({ date, fullWidth }: MailDateProps) {
 	return (
-		<p m-0 text-zinc-500 text="13px" w="[130px]">
+		<p m-0 text-zinc-500 text="13px" w={fullWidth ? "130px" : "auto"}>
 			{date()}
 		</p>
 	)

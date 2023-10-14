@@ -6,20 +6,21 @@ import {
 	createSignal,
 	onCleanup,
 } from "solid-js"
-import type { EmailHint } from "../email"
+import type { EmailBase } from "../email"
 import { EmailsList, EmailsListProps } from "./EmailRow"
 import { Accessor } from "solid-js"
 import { Email } from "./Email"
 import { EmailEventsWebsocket } from "../services/websocket"
+import { fetch } from "../services/fetch"
 
 interface SelectedEmailActions {
 	delete: () => void
-	select: (e: EmailHint) => void
+	select: (e: EmailBase) => void
 	deSelect: () => void
 }
 
 type SelectedEmailContextType = [
-	Accessor<EmailHint | undefined>,
+	Accessor<EmailBase | undefined>,
 	SelectedEmailActions,
 ]
 
@@ -51,12 +52,12 @@ function throttleFn(fn: () => Promise<void>): () => Promise<void> {
 }
 
 export function App() {
-	const [emails, setEmails] = createSignal<Array<EmailHint>>()
-	const [selectedEmail, setSelectedEmail] = createSignal<EmailHint>()
+	const [emails, setEmails] = createSignal<Array<EmailBase>>()
+	const [selectedEmail, setSelectedEmail] = createSignal<EmailBase>()
 
 	const fetchEmails = throttleFn(async () => {
-		const response = await fetch("http://localhost:3000/api/emails")
-		const data: Array<EmailHint> = await response.json()
+		const response = await fetch("/api/emails")
+		const data: Array<EmailBase> = await response.json()
 		setEmails(data)
 	})
 
@@ -76,7 +77,7 @@ export function App() {
 		if (!id) return
 
 		setSelectedEmail(undefined)
-		await fetch("http://localhost:3000/api/emails/" + id, {
+		await fetch("/api/emails/" + id, {
 			method: "DELETE",
 		})
 		await fetchEmails()
@@ -115,7 +116,7 @@ export function App() {
 }
 
 interface LayoutWithEmailProps extends EmailsListProps {
-	selectedEmail: Accessor<EmailHint>
+	selectedEmail: Accessor<EmailBase>
 }
 
 function LayoutWithEmail({ emails }: LayoutWithEmailProps) {

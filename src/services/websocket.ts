@@ -1,3 +1,5 @@
+import { getUrl } from "./fetch"
+
 export class EmailEventsWebsocket {
 	private closed = false
 	private socket: WebSocket | null = null
@@ -15,7 +17,7 @@ export class EmailEventsWebsocket {
 		let first = true
 		while (true) {
 			await new Promise((res) => {
-				this.socket = new WebSocket("ws://localhost:3000/api/emails-events")
+				this.socket = new WebSocket(getUrl("/api/emails-events", true))
 				this.socket.onopen = () => {
 					if (this.closed && !first) {
 						this.newEmail()

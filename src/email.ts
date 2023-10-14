@@ -6,27 +6,24 @@ export interface Address {
 export interface Attachment {
 	filename: string
 	contentType: string
-	// data: ; // TODO
 }
 
 export interface EmbeddedFile {
 	cid: string
 	contentType: string
-	// data: ; // TODO
 }
 
 export interface EmailBase {
 	id: string
 	realDate: Date
 	subject: string
+	bodyHint: string
 	sender: Address | null
 	from: Address[]
 	to: Address[]
-	attachments: Attachment[]
 }
 
-export interface Email extends EmailBase {
-	// Recived form the client
+export interface EmailRemainder {
 	header: Record<string, Array<string>>
 
 	replyTo: Array<Address>
@@ -34,8 +31,8 @@ export interface Email extends EmailBase {
 	bcc: Array<Address>
 	date: Date
 	messageId: string
-	inReplyTo: string[]
-	references: string[]
+	inReplyTo: string[] | null
+	references: string[] | null
 
 	resentFrom: Array<Address>
 	resentSender: Address | null
@@ -51,10 +48,6 @@ export interface Email extends EmailBase {
 	htmlBody: string
 	textBody: string
 
-	attachments: Attachment[]
-	embeddedFiles: EmbeddedFile[]
-}
-
-export interface EmailHint extends EmailBase {
-	textBodyHint: string
+	attachments: Attachment[] | null
+	embeddedFiles: EmbeddedFile[] | null
 }

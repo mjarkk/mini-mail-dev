@@ -1,14 +1,17 @@
 package src
 
 import (
+	"embed"
 	"errors"
 	"log"
+	"net/http"
 	"sync"
 
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/oklog/ulid/v2"
 )
@@ -38,26 +41,42 @@ type ErrorResposne struct {
 	Error string `json:"error"`
 }
 
+// findEmail finds an email by its id
+func findEmail(id string) (Email, error) {
+	parsedID, err := ulid.Parse(id)
+	if err != nil {
+		return Email{}, err
+	}
+
+	for _, email := range emails {
+		if email.ID == parsedID {
+			return email, nil
+		}
+	}
+
+	return Email{}, errors.New("email not found")
+}
+
 // StartWebserver starts the webserver
-func StartWebserver() {
+func StartWebserver(dist embed.FS) {
 	app := fiber.New()
 
 	app.Use(compress.New())
 	app.Use(cors.New())
 	app.Use(logger.New())
 
-	app.Use(func(c *fiber.Ctx) error {
+	apiGroup := app.Group("/api")
+
+	apiGroup.Use(func(c *fiber.Ctx) error {
 		err := c.Next()
 		if err == nil {
 			return nil
 		}
 
-		return c.JSON(ErrorResposne{
+		return c.Status(400).JSON(ErrorResposne{
 			Error: err.Error(),
 		})
 	})
-
-	apiGroup := app.Group("/api")
 
 	apiGroup.Get("/emails-events", websocket.New(func(c *websocket.Conn) {
 		registerWebsocketConnection(c)
@@ -76,28 +95,15 @@ func StartWebserver() {
 	}))
 
 	apiGroup.Get("/emails", func(c *fiber.Ctx) error {
-		hints := make([]EmailHint, len(emails))
-
-		for idx, email := range emails {
-			hints[len(hints)-idx-1] = EmailToEmailHint(email)
-		}
-
-		return c.JSON(hints)
+		return c.JSON(emails)
 	})
 
-	apiGroup.Get("/emails/:id", func(c *fiber.Ctx) error {
-		id, err := ulid.Parse(c.Params("id"))
+	apiGroup.Get("/emails/:id/remainder", func(c *fiber.Ctx) error {
+		email, err := findEmail(c.Params("id"))
 		if err != nil {
 			return err
 		}
-
-		for _, email := range emails {
-			if email.ID == id {
-				return c.JSON(email)
-			}
-		}
-
-		return errors.New("email not found")
+		return c.JSON(email.Remainder)
 	})
 
 	apiGroup.Delete("/emails/:id", func(c *fiber.Ctx) error {
@@ -120,7 +126,7 @@ func StartWebserver() {
 	})
 
 	apiGroup.Get("/emails/:id/attachments/:nr", func(c *fiber.Ctx) error {
-		id, err := ulid.Parse(c.Params("id"))
+		email, err := findEmail(c.Params("id"))
 		if err != nil {
 			return err
 		}
@@ -128,39 +134,18 @@ func StartWebserver() {
 		var invalidNr = errors.New("invalid attachment number")
 
 		nr, err := c.ParamsInt("nr")
-		if err != nil {
+		if err != nil || nr < 0 || nr >= len(email.Remainder.Attachments) {
 			return invalidNr
 		}
 
-		if nr < 0 {
-			return invalidNr
-		}
-
-		var paramEmail *Email
-		for _, email := range emails {
-			if email.ID == id {
-				paramEmail = &email
-				break
-			}
-
-		}
-
-		if paramEmail == nil {
-			return errors.New("email not found")
-		}
-
-		if nr >= len(paramEmail.Attachments) {
-			return invalidNr
-		}
-
-		attachment := paramEmail.Attachments[nr]
+		attachment := email.Remainder.Attachments[nr]
 		c.Response().Header.SetContentType(attachment.ContentType)
 		c.Response().Header.Add("Content-Disposition", "attachment; filename=\""+attachment.Filename+"\"")
 		return c.Send(attachment.Data)
 	})
 
 	apiGroup.Get("/emails/:id/embeddedFiles/:nr", func(c *fiber.Ctx) error {
-		id, err := ulid.Parse(c.Params("id"))
+		email, err := findEmail(c.Params("id"))
 		if err != nil {
 			return err
 		}
@@ -168,35 +153,20 @@ func StartWebserver() {
 		var invalidNr = errors.New("invalid embedded file number")
 
 		nr, err := c.ParamsInt("nr")
-		if err != nil {
+		if err != nil || nr < 0 || nr >= len(email.Remainder.EmbeddedFiles) {
 			return invalidNr
 		}
 
-		if nr < 0 {
-			return invalidNr
-		}
-
-		var paramEmail *Email
-		for _, email := range emails {
-			if email.ID == id {
-				paramEmail = &email
-				break
-			}
-
-		}
-
-		if paramEmail == nil {
-			return errors.New("email not found")
-		}
-
-		if nr >= len(paramEmail.EmbeddedFiles) {
-			return invalidNr
-		}
-
-		attachment := paramEmail.EmbeddedFiles[nr]
+		attachment := email.Remainder.EmbeddedFiles[nr]
 		c.Response().Header.SetContentType(attachment.ContentType)
 		return c.Send(attachment.Data)
 	})
+
+	app.Use(filesystem.New(filesystem.Config{
+		PathPrefix: "dist",
+		Index:      "index.html",
+		Root:       http.FS(dist),
+	}))
 
 	log.Fatal(app.Listen(":3000"))
 }

@@ -74,20 +74,10 @@ func ConvertEmbeddedFile(eb parsemail.EmbeddedFile) (EmbeddedFile, error) {
 	}, err
 }
 
-// Email contains a single email
-type Email struct {
-	// Added by our server
-	ID       ulid.ULID `json:"id"`
-	RealDate time.Time `json:"realDate"`
-
-	// Recived form the client
+type EmailRemainder struct {
 	Header mail.Header `json:"header"`
 
-	Subject    string     `json:"subject"`
-	Sender     *Address   `json:"sender"`
-	From       []*Address `json:"from"`
 	ReplyTo    []*Address `json:"replyTo"`
-	To         []*Address `json:"to"`
 	Cc         []*Address `json:"cc"`
 	Bcc        []*Address `json:"bcc"`
 	Date       time.Time  `json:"date"`
@@ -112,6 +102,22 @@ type Email struct {
 	EmbeddedFiles []EmbeddedFile `json:"embeddedFiles"`
 }
 
+// Email contains a single email
+type Email struct {
+	// Added by our server
+	ID       ulid.ULID `json:"id"`
+	RealDate time.Time `json:"realDate"`
+	Subject  string    `json:"subject"`
+	BodyHint string    `json:"bodyHint"`
+
+	// Recived form the client
+	Sender *Address   `json:"sender"`
+	From   []*Address `json:"from"`
+	To     []*Address `json:"to"`
+
+	Remainder EmailRemainder `json:"-"`
+}
+
 // ConvertEmail converts parsemail.Email to a Email
 func ConvertEmail(bluemondayPolicy *bluemonday.Policy, ulid ulid.ULID, em parsemail.Email, realDate time.Time, realFrom, realTo string) (Email, error) {
 	attachments, err := ConvertAttachmentList(em.Attachments)
@@ -124,33 +130,47 @@ func ConvertEmail(bluemondayPolicy *bluemonday.Policy, ulid ulid.ULID, em parsem
 		return Email{}, err
 	}
 
+	bodyHint := strings.NewReplacer(
+		"\n", " ",
+		"\r", " ",
+		"\t", " ",
+		"   ", " ",
+		"  ", " ",
+	).Replace(em.TextBody)
+	if len(bodyHint) > 100 {
+		bodyHint = bodyHint[:100] + "..."
+	}
+
 	resp := Email{
-		ID:              ulid,
-		RealDate:        realDate,
-		Header:          em.Header,
-		Subject:         em.Subject,
-		Sender:          MightConvertAddress(em.Sender),
-		From:            ConvertAddressList(em.From),
-		ReplyTo:         ConvertAddressList(em.ReplyTo),
-		To:              ConvertAddressList(em.To),
-		Cc:              ConvertAddressList(em.Cc),
-		Bcc:             ConvertAddressList(em.Bcc),
-		Date:            em.Date,
-		MessageID:       em.MessageID,
-		InReplyTo:       em.InReplyTo,
-		References:      em.References,
-		ResentFrom:      ConvertAddressList(em.ResentFrom),
-		ResentSender:    MightConvertAddress(em.ResentSender),
-		ResentTo:        ConvertAddressList(em.ResentTo),
-		ResentDate:      em.ResentDate,
-		ResentCc:        ConvertAddressList(em.ResentCc),
-		ResentBcc:       ConvertAddressList(em.ResentBcc),
-		ResentMessageID: em.ResentMessageID,
-		ContentType:     em.ContentType,
-		HTMLBody:        bluemondayPolicy.Sanitize(em.HTMLBody),
-		TextBody:        em.TextBody,
-		Attachments:     attachments,
-		EmbeddedFiles:   embeddedFiles,
+		ID:       ulid,
+		RealDate: realDate,
+		Subject:  em.Subject,
+		Sender:   MightConvertAddress(em.Sender),
+		From:     ConvertAddressList(em.From),
+		To:       ConvertAddressList(em.To),
+		BodyHint: bodyHint,
+		Remainder: EmailRemainder{
+			Header:          em.Header,
+			ReplyTo:         ConvertAddressList(em.ReplyTo),
+			Cc:              ConvertAddressList(em.Cc),
+			Bcc:             ConvertAddressList(em.Bcc),
+			Date:            em.Date,
+			MessageID:       em.MessageID,
+			InReplyTo:       em.InReplyTo,
+			References:      em.References,
+			ResentFrom:      ConvertAddressList(em.ResentFrom),
+			ResentSender:    MightConvertAddress(em.ResentSender),
+			ResentTo:        ConvertAddressList(em.ResentTo),
+			ResentDate:      em.ResentDate,
+			ResentCc:        ConvertAddressList(em.ResentCc),
+			ResentBcc:       ConvertAddressList(em.ResentBcc),
+			ResentMessageID: em.ResentMessageID,
+			ContentType:     em.ContentType,
+			HTMLBody:        bluemondayPolicy.Sanitize(em.HTMLBody),
+			TextBody:        em.TextBody,
+			Attachments:     attachments,
+			EmbeddedFiles:   embeddedFiles,
+		},
 	}
 
 	if resp.Sender == nil && realFrom != "" {
@@ -212,43 +232,4 @@ func ConvertEmbeddedFileList(ebList []parsemail.EmbeddedFile) ([]EmbeddedFile, e
 		}
 	}
 	return results, nil
-}
-
-// EmailHint contains the hints of a single email
-type EmailHint struct {
-	ID           ulid.ULID    `json:"id"`
-	RealDate     time.Time    `json:"realDate"`
-	Subject      string       `json:"subject"`
-	Sender       *Address     `json:"sender"`
-	From         []*Address   `json:"from"`
-	To           []*Address   `json:"to"`
-	TextBodyHint string       `json:"textBodyHint"`
-	Attachments  []Attachment `json:"attachments"`
-}
-
-// EmailToEmailHint converts a Email to a EmailHint
-func EmailToEmailHint(email Email) EmailHint {
-	bodyHint := strings.NewReplacer(
-		"\n", " ",
-		"\r", " ",
-		"\t", " ",
-		"   ", " ",
-		"  ", " ",
-	).Replace(email.TextBody)
-	if len(bodyHint) > 100 {
-		bodyHint = bodyHint[:100] + "..."
-	}
-
-	hint := EmailHint{
-		ID:           email.ID,
-		RealDate:     email.RealDate,
-		Subject:      email.Subject,
-		Sender:       email.Sender,
-		From:         email.From,
-		To:           email.To,
-		TextBodyHint: bodyHint,
-		Attachments:  email.Attachments,
-	}
-
-	return hint
 }

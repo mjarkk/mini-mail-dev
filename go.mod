@@ -1,4 +1,4 @@
-module github.com/mjarkk/mini-mail-server
+module github.com/mjarkk/mini-mail-dev
 
 go 1.21.2
 

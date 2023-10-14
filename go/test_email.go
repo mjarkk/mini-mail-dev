@@ -4,8 +4,8 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"time"
 
 	mail "github.com/xhit/go-simple-mail/v2"
@@ -67,7 +67,7 @@ func TestSendingMail() {
 		mustSendEmail(smtpClient, email)
 	}
 
-	screenshotBytes, err := ioutil.ReadFile("./screenshot.png")
+	screenshotBytes, err := os.ReadFile("./screenshot.png")
 	if err != nil {
 		log.Fatalln(err)
 	}

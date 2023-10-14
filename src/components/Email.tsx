@@ -7,48 +7,47 @@ import {
 	createSignal,
 	useContext,
 } from "solid-js"
-import type { Address, Email, EmailHint } from "../email"
+import type { Address, EmailBase, EmailRemainder } from "../email"
 import { EmailAddr } from "./EmailAddress"
 import { SelectedEmailContext } from "./App"
 import { AttachmentButton } from "./AttachmentButton"
+import { fetch } from "../services/fetch"
 
 export interface EmailProps {}
 
 export function Email({}: EmailProps) {
-	const [selectedEmail] = useContext(SelectedEmailContext)
+	const [email] = useContext(SelectedEmailContext)
 
-	const [fullEmail, setFullEmail] = createSignal<Email>()
+	const [emailRemainder, setEmailRemainder] = createSignal<EmailRemainder>()
 
 	const getFullMail = async (id: string) => {
-		setFullEmail(undefined)
-		const response = await fetch("http://localhost:3000/api/emails/" + id)
+		setEmailRemainder(undefined)
+		const response = await fetch(`/api/emails/${id}/remainder`)
 		const data = await response.json()
-		setFullEmail(data)
+		if (response.status !== 200) throw data.error
+		setEmailRemainder(data)
 	}
 
 	createEffect(() => {
-		const email = selectedEmail()
-		if (email) getFullMail(email.id)
+		const e = email()
+		if (e) getFullMail(e.id)
 	})
-
-	const fullOrPartialEmail = createMemo(
-		() => fullEmail() ?? selectedEmail() ?? ({} as EmailHint),
-	)
 
 	return (
 		<div>
-			<Header email={fullOrPartialEmail} />
-			<Attachments email={fullOrPartialEmail} />
-			<Body email={fullOrPartialEmail} />
+			<Header email={() => email()!} emailRemainder={emailRemainder} />
+			<Attachments email={() => email()!} emailRemainder={emailRemainder} />
+			<Body emailRemainder={emailRemainder} />
 		</div>
 	)
 }
 
 interface HeaderProps {
-	email: Accessor<EmailHint | Email>
+	email: Accessor<EmailBase>
+	emailRemainder: Accessor<EmailRemainder | undefined>
 }
 
-function Header({ email }: HeaderProps) {
+function Header({ email, emailRemainder }: HeaderProps) {
 	const [_, selectedEmailActions] = useContext(SelectedEmailContext)
 
 	const fields = createMemo(() => {
@@ -76,10 +75,12 @@ function Header({ email }: HeaderProps) {
 		}
 		mightAddList("From", e.from)
 		mightAddList("To", e.to)
-		if ("cc" in e) {
-			mightAddList("ReplyTo", e.replyTo)
-			mightAddList("CC", e.cc)
-			mightAddList("BCC", e.bcc)
+
+		const remainder = emailRemainder()
+		if (remainder) {
+			mightAddList("ReplyTo", remainder.replyTo)
+			mightAddList("CC", remainder.cc)
+			mightAddList("BCC", remainder.bcc)
 		}
 
 		return resp
@@ -120,30 +121,33 @@ function Header({ email }: HeaderProps) {
 }
 
 interface AttachmentsProps {
-	email: Accessor<EmailHint | Email>
+	email: Accessor<EmailBase>
+	emailRemainder: Accessor<EmailRemainder | undefined>
 }
 
-function Attachments({ email }: AttachmentsProps) {
-	const downloadAttachment = (index: number) => {
+function Attachments({ emailRemainder, email }: AttachmentsProps) {
+	const downloadAttachment = (filename: string, index: number) => {
 		const link = document.createElement("a")
-		link.download = email().attachments![index].filename
+		link.download = filename
 		link.href =
 			"http://localhost:3000/api/emails/" + email().id + "/attachments/" + index
 		link.click()
 	}
 
+	const hasAttachments = () => (emailRemainder()?.attachments?.length ?? 0) > 0
+
 	return (
-		<Show when={email().attachments && email().attachments.length > 0}>
+		<Show when={hasAttachments()}>
 			<div border-0 border-b border-b-solid border-zinc-800 p-4>
 				<p m-0 text-zinc-500>
 					Attachments:
 				</p>
 				<div flex flex-wrap gap-2 mt-1>
-					<For each={email().attachments}>
+					<For each={emailRemainder()!.attachments}>
 						{(attachment, index) => (
 							<AttachmentButton
 								{...attachment}
-								onclick={() => downloadAttachment(index())}
+								onclick={() => downloadAttachment(attachment.filename, index())}
 							/>
 						)}
 					</For>
@@ -154,21 +158,12 @@ function Attachments({ email }: AttachmentsProps) {
 }
 
 interface BodyProps {
-	email: Accessor<EmailHint | Email>
+	emailRemainder: Accessor<EmailRemainder | undefined>
 }
 
-function Body({ email }: BodyProps) {
-	const htmlBody = () => {
-		const e = email()
-		return "htmlBody" in e ? e.htmlBody || null : null
-	}
-
-	const fallbackBody = () => {
-		const e = email()
-		if ("textBody" in e && e.textBody) return e.textBody
-		if ("textBodyHint" in e && e.textBodyHint) return e.textBodyHint
-		return ""
-	}
+function Body({ emailRemainder }: BodyProps) {
+	const htmlBody = () => emailRemainder()?.htmlBody || null
+	const fallbackBody = () => emailRemainder()?.textBody ?? ""
 
 	return (
 		<div p-4>
