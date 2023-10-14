@@ -24,3 +24,13 @@ Now you can start mini-mail-dev using
 ```bash
 ./mini-mail-dev
 ```
+
+## Dev
+
+```bash
+go run .
+# In another terminal tab run:
+npm run dev
+```
+
+_The javascript file are hot module reloaded, the go files are not reloaded on changes made to them_
