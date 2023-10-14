@@ -9,7 +9,6 @@ lerna-debug.log*
 
 node_modules
 dist
-!dist/.gitkeep
 dist-ssr
 *.local
 pnpm-lock.yaml
@@ -23,4 +22,4 @@ pnpm-lock.yaml
 *.sln
 *.sw?
 
-mini-mail-server*
+mini-mail-dev*
