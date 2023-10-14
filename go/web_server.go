@@ -3,6 +3,7 @@ package src
 import (
 	"embed"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"sync"
@@ -59,7 +60,9 @@ func findEmail(id string) (Email, error) {
 
 // StartWebserver starts the webserver
 func StartWebserver(dist embed.FS) {
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		DisableStartupMessage: true,
+	})
 
 	app.Use(compress.New())
 	app.Use(cors.New())
@@ -174,5 +177,6 @@ func StartWebserver(dist embed.FS) {
 		Root:       http.FS(dist),
 	}))
 
+	fmt.Println("Running SMTP server at", "localhost:3000")
 	log.Fatal(app.Listen(":3000"))
 }

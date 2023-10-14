@@ -1,6 +1,7 @@
 package src
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"math/rand"
@@ -136,7 +137,7 @@ func StartEmailServer() {
 	server.MaxRecipients = 50
 	server.AllowInsecureAuth = true
 
-	log.Println("Starting server at", server.Domain+server.Addr)
+	fmt.Println("Running SMTP server at", server.Domain+server.Addr)
 	err := server.ListenAndServe()
 	if err != nil {
 		log.Fatal(err)
