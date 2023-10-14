@@ -127,6 +127,14 @@ interface AttachmentsProps {
 }
 
 function Attachments({ email }: AttachmentsProps) {
+	const downloadAttachment = (index: number) => {
+		const link = document.createElement("a")
+		link.download = email().attachments![index].filename
+		link.href =
+			"http://localhost:3000/api/emails/" + email().id + "/attachments/" + index
+		link.click()
+	}
+
 	return (
 		<Show when={email().attachments && email().attachments.length > 0}>
 			<div border-0 border-b border-b-solid border-zinc-800 p-4>
@@ -135,7 +143,12 @@ function Attachments({ email }: AttachmentsProps) {
 				</p>
 				<div flex flex-wrap gap-2 mt-1>
 					<For each={email().attachments}>
-						{(attachment) => <AttachmentButton {...attachment} />}
+						{(attachment, index) => (
+							<AttachmentButton
+								{...attachment}
+								onclick={() => downloadAttachment(index())}
+							/>
+						)}
 					</For>
 				</div>
 			</div>

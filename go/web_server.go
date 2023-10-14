@@ -38,13 +38,10 @@ func StartWebserver() {
 	apiGroup := app.Group("/api")
 
 	apiGroup.Get("/emails", func(c *fiber.Ctx) error {
-		hints := []EmailHint{}
+		hints := make([]EmailHint, len(emails))
 
-		emailsLock.Lock()
-		defer emailsLock.Unlock()
-
-		for _, email := range emails {
-			hints = append(hints, EmailToEmailHint(email))
+		for idx, email := range emails {
+			hints[len(hints)-idx-1] = EmailToEmailHint(email)
 		}
 
 		return c.JSON(hints)
@@ -55,9 +52,6 @@ func StartWebserver() {
 		if err != nil {
 			return err
 		}
-
-		emailsLock.Lock()
-		defer emailsLock.Unlock()
 
 		for _, email := range emails {
 			if email.ID == id {
@@ -104,9 +98,6 @@ func StartWebserver() {
 			return invalidNr
 		}
 
-		emailsLock.Lock()
-		defer emailsLock.Unlock()
-
 		var paramEmail *Email
 		for _, email := range emails {
 			if email.ID == id {
@@ -126,6 +117,7 @@ func StartWebserver() {
 
 		attachment := paramEmail.Attachments[nr]
 		c.Response().Header.SetContentType(attachment.ContentType)
+		c.Response().Header.Add("Content-Disposition", "attachment; filename=\""+attachment.Filename+"\"")
 		return c.Send(attachment.Data)
 	})
 
@@ -145,9 +137,6 @@ func StartWebserver() {
 		if nr < 0 {
 			return invalidNr
 		}
-
-		emailsLock.Lock()
-		defer emailsLock.Unlock()
 
 		var paramEmail *Email
 		for _, email := range emails {

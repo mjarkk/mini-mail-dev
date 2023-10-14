@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"time"
 
@@ -46,39 +47,59 @@ func TestSendingMail() {
 		Inline:   false,
 	}
 
-	email := mail.NewMSG()
-	email.SetFrom("Example sender <sender@example.org>").
+	email := mail.NewMSG().
+		SetFrom("Example sender <sender@example.org>").
 		AddTo("recipient@example.net").
 		SetSubject("Test sending mail").
 		AddAlternative(mail.TextPlain, "Hello world!\nThis is test\n")
 
-	if email.Error != nil {
-		log.Fatalln(email.Error)
-	}
-
-	err = email.Send(smtpClient)
-	if err != nil {
-		log.Fatalln("Failed to send mail", err)
-	}
+	mustSendEmail(smtpClient, email)
 
 	for i := 0; i < 2; i++ {
-		email := mail.NewMSG()
-		email.SetFrom(fmt.Sprintf("Example sender <sender-%d@example.org>", i)).
+		email := mail.NewMSG().
+			SetFrom(fmt.Sprintf("Example sender <sender-%d@example.org>", i)).
 			AddTo(fmt.Sprintf("recipient-%d@example.net", i)).
 			SetSubject(fmt.Sprintf("Test sending mail #%d", i)).
 			SetBody(mail.TextHTML, fmt.Sprintf("<h1>Hello world!</h1><p>This is test #%d</p>", i)).
 			AddAlternative(mail.TextPlain, fmt.Sprintf("Hello world!\nThis is test #%d\n", i)).
 			Attach(&imageFile)
 
-		if email.Error != nil {
-			log.Fatalln(email.Error)
-		}
-
-		err = email.Send(smtpClient)
-		if err != nil {
-			log.Fatalln("Failed to send mail", err)
-		}
+		mustSendEmail(smtpClient, email)
 	}
 
+	screenshotBytes, err := ioutil.ReadFile("./screenshot.png")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	screenshot := mail.File{
+		FilePath: "./screenshot.png",
+		Name:     "screenshot.png",
+		MimeType: "image/png",
+		Data:     screenshotBytes,
+		Inline:   false,
+	}
+
+	email = mail.NewMSG().
+		SetFrom("Example sender <attachment-sender@example.org>").
+		AddTo("attachment-recipient@example.net").
+		SetSubject("Test sending attachment").
+		SetBody(mail.TextHTML, "<h1>Attachment test!</h1>").
+		Attach(&imageFile).
+		Attach(&screenshot)
+
+	mustSendEmail(smtpClient, email)
+
 	smtpClient.Close()
+}
+
+func mustSendEmail(smtpClient *mail.SMTPClient, email *mail.Email) {
+	if email.Error != nil {
+		log.Fatalln(email.Error)
+	}
+
+	err := email.Send(smtpClient)
+	if err != nil {
+		log.Fatalln("Failed to send mail", err)
+	}
 }

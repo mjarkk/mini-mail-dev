@@ -11,10 +11,18 @@ const isPdf = (t: string) =>
 
 const isImage = (t: string) => t.startsWith("image/")
 
-export function AttachmentButton({ contentType, filename }: Attachment) {
+interface AttachmentButtonProps extends Attachment {
+	onclick?: () => void
+}
+
+export function AttachmentButton({
+	contentType,
+	filename,
+	onclick,
+}: AttachmentButtonProps) {
 	const iconStyle = { height: "30px", width: "30px" }
 	return (
-		<button onclick={() => alert("TODO")} p-4 w="180px">
+		<button onclick={onclick} p-4 w="180px">
 			<Switch fallback={<IconFilePresent style={iconStyle} />}>
 				<Match when={isImage(contentType)}>
 					<IconImage style={iconStyle} />
