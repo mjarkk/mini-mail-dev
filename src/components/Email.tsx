@@ -1,9 +1,7 @@
 import {
 	Accessor,
 	For,
-	Match,
 	Show,
-	Switch,
 	createEffect,
 	createMemo,
 	createSignal,
@@ -12,9 +10,6 @@ import {
 import type { Address, Email, EmailHint } from "../email"
 import { EmailAddr } from "./EmailAddress"
 import { SelectedEmailContext } from "./App"
-import IconImage from "~icons/material-symbols/image-outline"
-import IconFilePresent from "~icons/material-symbols/file-present-outline"
-import IconPictureAsPdf from "~icons/material-symbols/picture-as-pdf-outline"
 import { AttachmentButton } from "./AttachmentButton"
 
 export interface EmailProps {}
