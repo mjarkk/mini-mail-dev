@@ -14,7 +14,7 @@ import type { Address, EmailBase, EmailRemainder } from "../email"
 import { EmailAddr } from "./EmailAddress"
 import { SelectedEmailContext } from "./App"
 import { AttachmentButton } from "./AttachmentButton"
-import { fetch } from "../services/fetch"
+import { fetch, getUrl } from "../services/fetch"
 
 const Code = lazy(() => import("./Code").then((m) => ({ default: m.Code })))
 
@@ -134,8 +134,7 @@ function Attachments({ emailRemainder, email }: AttachmentsProps) {
 	const downloadAttachment = (filename: string, index: number) => {
 		const link = document.createElement("a")
 		link.download = filename
-		link.href =
-			"http://localhost:3000/api/emails/" + email().id + "/attachments/" + index
+		link.href = getUrl("/api/emails/" + email().id + "/attachments/" + index)
 		link.click()
 	}
 

@@ -65,7 +65,7 @@ type StartWebserverOptions struct {
 }
 
 // StartWebserver starts the webserver
-func StartWebserver(dist embed.FS, ops StartWebserverOptions) {
+func StartWebserver(dist embed.FS, opts StartWebserverOptions) {
 	app := fiber.New(fiber.Config{
 		DisableStartupMessage: true,
 	})
@@ -183,6 +183,6 @@ func StartWebserver(dist embed.FS, ops StartWebserverOptions) {
 		Root:       http.FS(dist),
 	}))
 
-	fmt.Println("Running SMTP server at", "localhost:3000")
-	log.Fatal(app.Listen(":3000"))
+	fmt.Println("Running SMTP server at", opts.Addr)
+	log.Fatal(app.Listen(opts.Addr))
 }

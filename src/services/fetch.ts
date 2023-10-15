@@ -1,6 +1,6 @@
 export function getUrl(path: string, isWebsocket = false) {
 	if (import.meta.env.DEV) {
-		return `${isWebsocket ? "ws" : "http"}://localhost:3000${path}`
+		return `${isWebsocket ? "ws" : "http"}://localhost:1080${path}`
 	}
 
 	if (isWebsocket) {
