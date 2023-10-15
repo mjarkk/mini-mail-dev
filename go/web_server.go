@@ -10,6 +10,7 @@ import (
 
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/basicauth"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
@@ -69,6 +70,14 @@ func StartWebserver(dist embed.FS, opts StartWebserverOptions) {
 	app := fiber.New(fiber.Config{
 		DisableStartupMessage: true,
 	})
+
+	if opts.BasicAuthUsername != "" || opts.BasicAuthPassword != "" {
+		app.Use(basicauth.New(basicauth.Config{
+			Users: map[string]string{
+				opts.BasicAuthUsername: opts.BasicAuthPassword,
+			},
+		}))
+	}
 
 	app.Use(compress.New())
 	app.Use(cors.New())
