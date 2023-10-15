@@ -58,8 +58,14 @@ func findEmail(id string) (Email, error) {
 	return Email{}, errors.New("email not found")
 }
 
+type StartWebserverOptions struct {
+	Addr              string
+	BasicAuthUsername string
+	BasicAuthPassword string
+}
+
 // StartWebserver starts the webserver
-func StartWebserver(dist embed.FS) {
+func StartWebserver(dist embed.FS, ops StartWebserverOptions) {
 	app := fiber.New(fiber.Config{
 		DisableStartupMessage: true,
 	})

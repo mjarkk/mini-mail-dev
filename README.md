@@ -19,23 +19,67 @@ Here are things this project aims improve / do different compared to maildev.
 - By default a fixed max amound of emails and when exceeded old emails are removed. _(So you can safely deploy this on a server without much storage or cpu as the server does not have to store a shitload of emails when sending a shitlaod of emails on a staging server hehe)_
 - Diffrent server side language. _Mail dev has a tendency to break when running it on a server and sending more than the "average" amound of mails (my experiance is at around 5000 mails). By applying the above and using a language that is more made for this kinds of things i can deploy this on every potato in the world._
 
-## Usage
+## Install
 
-**Install**
+**Go Install**
+
+_(you might not have the latest version if you have installed it earlier)_
 
 ```bash
-# go install (you might not have the latest version if you have installed it earlier)
 go install github.com/mjarkk/mini-mail-dev@latest
 mini-mail-dev
+```
 
-# git clone & go install
+**Git clone & Go install**
+
+```bash
 git clone https://github.com/mjarkk/mini-mail-dev
 cd mini-mail-dev
 go install
 mini-mail-dev
+```
 
-# docker WIP
+**Docker WIP**
+
+_WIP_
+
+```bash
 # docker build -t mini-mail-dev https://github.com/mjarkk/mini-mail-dev.git#main
+```
+
+## Usage
+
+```sh
+mini-mail-dev
+```
+
+Options:
+
+```
+Usage of mini-mail-dev
+    --disable-web                 Disable the web interface
+    --http string                 HTTP server address (default "localhost:1080")
+    --http-pass string            HTTP server address, if empty no credentials required
+    --http-user string            HTTP server username, if empty no credentials required
+    --smtp string                 SMTP server address (default "localhost:1025")
+    --smtp-domain string          SMTP server domain (default "localhost")
+    --smtp-incoming-pass string   SMTP server password, if empty no credentials required
+    --smtp-incoming-user string   SMTP server username, if empty no credentials required
+```
+
+Envourment variables
+
+_These are used the same way as the arguments_
+
+```
+SMTP_ADDR
+HTTP_ADDR
+SMTP_DOMAIN
+SMTP_INCOMING_USER
+SMTP_INCOMING_PASS
+HTTP_USER
+HTTP_PASS
+DISABLE_WEB
 ```
 
 ## Build & Run

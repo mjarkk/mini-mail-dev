@@ -18,8 +18,14 @@ import (
 var emailsLock sync.Mutex
 var emails = []Email{}
 
+type EmailCredentials struct {
+	Username string
+	Password string
+}
+
 // The Backend implements SMTP server methods.
 type Backend struct {
+	Credentials      *EmailCredentials
 	Entropy          *rand.Rand
 	BluemondayPolicy *bluemonday.Policy
 }
@@ -39,9 +45,19 @@ type Session struct {
 	Auth    bool
 }
 
+// unauthenticated returns true if the session is not authenticated
+func (s *Session) unauthenticated() bool {
+	return s.Backend.Credentials != nil && !s.Auth
+}
+
 // AuthPlain implements smtp.Session
 func (s *Session) AuthPlain(username, password string) error {
-	if username != "username" || password != "password" {
+	creds := s.Backend.Credentials
+	if creds == nil {
+		return nil
+	}
+
+	if username != creds.Username || password != creds.Password {
 		return smtp.ErrAuthFailed
 	}
 
@@ -51,7 +67,7 @@ func (s *Session) AuthPlain(username, password string) error {
 
 // Mail implements smtp.Session
 func (s *Session) Mail(from string, opts *smtp.MailOptions) error {
-	if !s.Auth {
+	if s.unauthenticated() {
 		return smtp.ErrAuthRequired
 	}
 
@@ -61,7 +77,7 @@ func (s *Session) Mail(from string, opts *smtp.MailOptions) error {
 
 // Rcpt implements smtp.Session
 func (s *Session) Rcpt(to string, opts *smtp.RcptOptions) error {
-	if !s.Auth {
+	if s.unauthenticated() {
 		return smtp.ErrAuthRequired
 	}
 
@@ -71,7 +87,7 @@ func (s *Session) Rcpt(to string, opts *smtp.RcptOptions) error {
 
 // Data implements smtp.Session
 func (s *Session) Data(r io.Reader) error {
-	if !s.Auth {
+	if s.unauthenticated() {
 		return smtp.ErrAuthRequired
 	}
 
@@ -120,24 +136,39 @@ func (s *Session) Logout() error {
 	return nil
 }
 
+type StartEmailServerOptions struct {
+	Addr     string
+	Domain   string
+	Username string
+	Password string
+}
+
 // StartEmailServer starts the email server
-func StartEmailServer() {
+func StartEmailServer(opts StartEmailServerOptions) {
 	backend := &Backend{
 		Entropy:          rand.New(rand.NewSource(time.Now().UnixNano())),
 		BluemondayPolicy: bluemonday.UGCPolicy(),
 	}
 
+	if opts.Username != "" && opts.Password != "" {
+		backend.Credentials = &EmailCredentials{
+			Username: opts.Username,
+			Password: opts.Password,
+		}
+	}
+
 	server := smtp.NewServer(backend)
 
-	server.Addr = ":1025"
-	server.Domain = "localhost"
+	server.Addr = opts.Addr
+	server.Domain = opts.Domain
 	server.ReadTimeout = 10 * time.Second
 	server.WriteTimeout = 10 * time.Second
 	server.MaxMessageBytes = 1024 * 1024 * 10 // 10 MB
 	server.MaxRecipients = 50
 	server.AllowInsecureAuth = true
+	server.AuthDisabled = backend.Credentials == nil
 
-	fmt.Println("Running SMTP server at", server.Domain+server.Addr)
+	fmt.Println("Running SMTP server at", server.Addr)
 	err := server.ListenAndServe()
 	if err != nil {
 		log.Fatal(err)

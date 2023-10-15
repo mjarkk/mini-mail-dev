@@ -64,15 +64,15 @@ func main() {
 		mustSendEmail(smtpClient, email)
 	}
 
-	screenshotBytes, err := os.ReadFile("./screenshot.png")
+	screenshotBytes, err := os.ReadFile("./screenshot.jpg")
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	screenshot := mail.File{
-		FilePath: "./screenshot.png",
-		Name:     "screenshot.png",
-		MimeType: "image/png",
+		FilePath: "./screenshot.jpg",
+		Name:     "screenshot.jpg",
+		MimeType: "image/jpeg",
 		Data:     screenshotBytes,
 		Inline:   false,
 	}
