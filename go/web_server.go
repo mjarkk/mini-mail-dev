@@ -193,6 +193,6 @@ func StartWebserver(dist embed.FS, opts StartWebserverOptions) {
 		Root:       http.FS(dist),
 	}))
 
-	fmt.Println("Running SMTP server at", opts.Addr)
+	fmt.Println("Running Web server at", opts.Addr)
 	log.Fatal(app.Listen(opts.Addr))
 }
