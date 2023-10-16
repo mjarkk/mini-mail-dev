@@ -6,16 +6,16 @@ A alternative take on a development testing email server.
 
 ## Why
 
-Something something re-inventing the wheel :^)
+Something something reinventing the wheel :^)
 
-But beside the fun of re-inventing the wheel i do have some reasons for making this.
-I used mail dev before this and i have some annoyences with it, it's an awesome project and has improved my live but after using it for many years i have also noticed it's not without it's flaws so here is `mini-mail-dev` to fix my problems with it and my take on a mail development server.
+But besides the fun of reinventing the wheel I do have some reasons for making this.
+I used maildev before this and I have some annoyances with it. It's an awesome project and has improved my life, but after using it for many years I have also noticed it's not without its flaws. So here is `mini-mail-dev`, my take on a mail development server and with fixes for my maildev problems.
 
-Here are things this project aims improve / do different compared to maildev.
+Here are things this project aims to improve / do different compared to maildev:
 
 - Attachments not hidden behind a button
-- By default a fixed max amound of emails and when exceeded old emails are removed. _(So you can safely deploy this on a server without much storage or cpu as the server does not have to store a shitload of emails when sending a shitlaod of emails on a staging server hehe)_
-- Diffrent server side language. _Mail dev has a tendency to break when running it on a server and sending more than the "average" amound of mails (my experiance is at around 5000 mails). By applying the above and using a language that is more made for this kinds of things i can deploy this on every potato in the world._
+- By default a fixed max amount of emails and when exceeded old emails are removed. _(So you can safely deploy this on a server without much storage or cpu as the server does not have to store a shitload of emails when sending a shitload of emails on a staging server hehe)_
+- Different server side language. _Mail dev has a tendency to break when running it on a server and sending more than the "average" amound of mails (my experience is at around 5.000 emails). By applying the above and using a language that is better suited for these kinds of things I can deploy this on every potato in the world._
 
 ## Install
 
