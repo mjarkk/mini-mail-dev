@@ -37,12 +37,20 @@ go install
 mini-mail-dev
 ```
 
-**Docker WIP**
-
-_WIP_
+**Docker**
 
 ```bash
-# docker build -t mini-mail-dev https://github.com/mjarkk/mini-mail-dev.git#main
+docker build -t mini-mail-dev https://github.com/mjarkk/mini-mail-dev.git#main
+docker run -it --rm -p 1080:1080 -p 1025:1025 mini-mail-dev
+```
+
+**Git clone & Docker**
+
+```bash
+git clone https://github.com/mjarkk/mini-mail-dev
+cd mini-mail-dev
+docker build -t mini-mail-dev .
+docker run -it --rm -p 1080:1080 -p 1025:1025 mini-mail-dev
 ```
 
 ## Usage
