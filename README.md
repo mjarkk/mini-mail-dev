@@ -61,6 +61,7 @@ Usage of mini-mail-dev
     --http string                 HTTP server address (default "localhost:1080")
     --http-pass string            HTTP server address, if empty no credentials required
     --http-user string            HTTP server username, if empty no credentials required
+    --max-emails uint16           The max amount of emails to keep (default 200)
     --smtp string                 SMTP server address (default "localhost:1025")
     --smtp-domain string          SMTP server domain (default "localhost")
     --smtp-incoming-pass string   SMTP server password, if empty no credentials required
@@ -72,14 +73,15 @@ Envourment variables
 _These are used the same way as the arguments_
 
 ```
-SMTP_ADDR
-HTTP_ADDR
-SMTP_DOMAIN
-SMTP_INCOMING_USER
-SMTP_INCOMING_PASS
-HTTP_USER
-HTTP_PASS
 DISABLE_WEB
+HTTP_ADDR
+HTTP_PASS
+HTTP_USER
+MAX_EMAILS
+SMTP_ADDR
+SMTP_DOMAIN
+SMTP_INCOMING_PASS
+SMTP_INCOMING_USER
 ```
 
 ## Build & Run
