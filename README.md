@@ -1,7 +1,5 @@
 # `mini-mail-dev`
 
-> **This project is work in progress!**
-
 ![Screenshot](/screenshot.jpg?raw=true "Screnshot")
 
 A alternative take on a development testing email server.
