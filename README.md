@@ -74,7 +74,7 @@ Usage of mini-mail-dev
     --smtp-incoming-user string   SMTP server username, if empty no credentials required
 ```
 
-Envourment variables
+Environment variables
 
 _These are used the same way as the arguments_
 
@@ -107,7 +107,7 @@ go get
 go build
 ```
 
-Now you can start mini-mail-dev using
+Now you can start `mini-mail-dev` using
 
 ```bash
 ./mini-mail-dev
@@ -124,4 +124,4 @@ npm run dev
 go run test/test_email.go
 ```
 
-_The javascript file are hot module reloaded only when going to [localhost:**3001**](http://localhost:3001), the go files are not reloaded on changes made to them_
+_The javascript files are hot module reloaded only when going to [localhost:**3001**](http://localhost:3001), the go files are not reloaded on changes made_
