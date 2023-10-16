@@ -22,7 +22,7 @@ export function AttachmentButton({
 }: AttachmentButtonProps) {
 	const iconStyle = { height: "30px", width: "30px" }
 	return (
-		<button onclick={onclick} p-4 w="180px">
+		<button onclick={onclick} p-4 border-0 w="180px">
 			<Switch fallback={<IconFilePresent style={iconStyle} />}>
 				<Match when={isImage(contentType)}>
 					<IconImage style={iconStyle} />

@@ -4,6 +4,7 @@ import (
 	"embed"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	. "github.com/mjarkk/mini-mail-dev/go"
@@ -20,10 +21,12 @@ func getenv(key string) string {
 func main() {
 	ifEmptyNotRequired := ", if empty no credentials required"
 
+	defaultMaxEmails := uint16(200)
 	defaultSMTPAddr := "localhost:1025"
 	defaultHTTPAddr := "localhost:1080"
 	defaultSMPTDomain := "localhost"
 
+	argMaxEmails := pflag.Uint16("max-emails", defaultMaxEmails, "The max amount of emails to keep")
 	argSMTPAddr := pflag.String("smtp", defaultSMTPAddr, "SMTP server address")
 	argHTTPAddr := pflag.String("http", defaultHTTPAddr, "HTTP server address")
 	argSMTPDomain := pflag.String("smtp-domain", defaultSMPTDomain, "SMTP server domain")
@@ -34,6 +37,7 @@ func main() {
 	argDisableWeb := pflag.Bool("disable-web", false, "Disable the web interface")
 	pflag.Parse()
 
+	envMaxEmails := getenv("MAX_EMAILS")
 	envSMTPAddr := getenv("SMTP_ADDR")
 	envHTTPAddr := getenv("HTTP_ADDR")
 	envSMTPDomain := getenv("SMTP_DOMAIN")
@@ -43,6 +47,12 @@ func main() {
 	envHTTPPassword := getenv("HTTP_PASS")
 	envDisableWeb := strings.ToLower(getenv("DISABLE_WEB")) == "true"
 
+	if *argMaxEmails == defaultMaxEmails && envMaxEmails != "" {
+		parsedEnvMaxEmails, err := strconv.Atoi(envMaxEmails)
+		if err == nil && parsedEnvMaxEmails >= 0 && parsedEnvMaxEmails < 65535 {
+			*argMaxEmails = uint16(parsedEnvMaxEmails)
+		}
+	}
 	if *argSMTPAddr == defaultHTTPAddr && envSMTPAddr != "" {
 		*argSMTPAddr = envSMTPAddr
 	}
@@ -78,9 +88,10 @@ func main() {
 		})
 	}
 	StartEmailServer(StartEmailServerOptions{
-		Addr:     *argSMTPAddr,
-		Domain:   *argSMTPDomain,
-		Username: *argSMTPUsername,
-		Password: *argSMTPPassword,
+		Addr:      *argSMTPAddr,
+		Domain:    *argSMTPDomain,
+		Username:  *argSMTPUsername,
+		Password:  *argSMTPPassword,
+		MaxEmails: *argMaxEmails,
 	})
 }

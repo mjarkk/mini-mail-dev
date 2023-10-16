@@ -59,6 +59,7 @@ func findEmail(id string) (Email, error) {
 	return Email{}, errors.New("email not found")
 }
 
+// StartWebserverOptions are the options for the webserver
 type StartWebserverOptions struct {
 	Addr              string
 	BasicAuthUsername string

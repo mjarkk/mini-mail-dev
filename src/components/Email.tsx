@@ -187,6 +187,28 @@ function Body({ emailRemainder }: BodyProps) {
 	)
 }
 
+interface HtmlBodyViewButtonProps {
+	onclick?: () => void
+	selected: Accessor<boolean>
+	children?: any
+}
+
+function HtmlBodyViewButton({
+	onclick,
+	selected,
+	children,
+}: HtmlBodyViewButtonProps) {
+	return (
+		<button
+			onclick={onclick}
+			text={selected() ? "indigo-400" : "zinc-200"}
+			border-0
+		>
+			{children}
+		</button>
+	)
+}
+
 function HtmlBody({
 	html,
 	plain,
@@ -203,24 +225,18 @@ function HtmlBody({
 	return (
 		<>
 			<div flex gap-1>
-				<button
+				<HtmlBodyViewButton
 					onclick={() => setView("preview")}
-					text={isPreview() ? "indigo-400" : "zinc-200"}
+					selected={isPreview}
 				>
 					Preview
-				</button>
-				<button
-					onclick={() => setView("plain")}
-					text={isPlain() ? "indigo-400" : "zinc-200"}
-				>
+				</HtmlBodyViewButton>
+				<HtmlBodyViewButton onclick={() => setView("plain")} selected={isPlain}>
 					Plain text
-				</button>
-				<button
-					onclick={() => setView("html")}
-					text={isHtml() ? "indigo-400" : "zinc-200"}
-				>
+				</HtmlBodyViewButton>
+				<HtmlBodyViewButton onclick={() => setView("html")} selected={isHtml}>
 					HTML
-				</button>
+				</HtmlBodyViewButton>
 			</div>
 			<Switch>
 				<Match when={isPreview()}>

@@ -28,6 +28,7 @@ type Backend struct {
 	Credentials      *EmailCredentials
 	Entropy          *rand.Rand
 	BluemondayPolicy *bluemonday.Policy
+	MaxEmails        int
 }
 
 // NewSession implements smtp.Backend
@@ -113,8 +114,8 @@ func (s *Session) Data(r io.Reader) error {
 
 	emailsLock.Lock()
 	emails = append(emails, email)
-	if len(emails) > 100 {
-		emails = emails[len(emails)-100:]
+	if len(emails) > s.Backend.MaxEmails {
+		emails = emails[len(emails)-s.Backend.MaxEmails:]
 	}
 	emailsLock.Unlock()
 
@@ -136,18 +137,25 @@ func (s *Session) Logout() error {
 	return nil
 }
 
+// StartEmailServerOptions are the options for starting the email server
 type StartEmailServerOptions struct {
-	Addr     string
-	Domain   string
-	Username string
-	Password string
+	Addr      string
+	Domain    string
+	Username  string
+	Password  string
+	MaxEmails uint16
 }
 
 // StartEmailServer starts the email server
 func StartEmailServer(opts StartEmailServerOptions) {
+	if opts.MaxEmails == 0 {
+		opts.MaxEmails = 200
+	}
+
 	backend := &Backend{
 		Entropy:          rand.New(rand.NewSource(time.Now().UnixNano())),
 		BluemondayPolicy: bluemonday.UGCPolicy(),
+		MaxEmails:        int(opts.MaxEmails),
 	}
 
 	if opts.Username != "" && opts.Password != "" {
@@ -168,7 +176,7 @@ func StartEmailServer(opts StartEmailServerOptions) {
 	server.AllowInsecureAuth = true
 	server.AuthDisabled = backend.Credentials == nil
 
-	fmt.Println("Running SMTP server at", server.Addr)
+	fmt.Println("Running SMTP server at", server.Addr, "with a emails dequeue length of", opts.MaxEmails)
 	err := server.ListenAndServe()
 	if err != nil {
 		log.Fatal(err)
