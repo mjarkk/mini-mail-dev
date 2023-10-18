@@ -18,6 +18,7 @@ export interface EmailBase {
 	realDate: Date
 	subject: string
 	bodyHint: string
+	bodyType: "html" | "text"
 	sender: Address | null
 	from: Address[]
 	to: Address[]

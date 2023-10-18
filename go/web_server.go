@@ -131,6 +131,17 @@ func StartWebserver(dist embed.FS, opts StartWebserverOptions) {
 		return c.JSON(email.Remainder)
 	})
 
+	apiGroup.Get("/emails/:id/page", func(c *fiber.Ctx) error {
+		email, err := findEmail(c.Params("id"))
+		if err != nil {
+			return err
+		}
+
+		c.Response().SetBodyRaw([]byte(email.Remainder.HTMLBody))
+		c.Response().Header.SetContentType(fiber.MIMETextHTML)
+		return nil
+	})
+
 	apiGroup.Delete("/emails/:id", func(c *fiber.Ctx) error {
 		id, err := ulid.Parse(c.Params("id"))
 		if err != nil {

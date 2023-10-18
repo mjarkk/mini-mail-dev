@@ -22,6 +22,7 @@ export interface EmailProps {}
 
 export function Email({}: EmailProps) {
 	const [email] = useContext(SelectedEmailContext)
+	const mustEmail = () => email()!
 
 	const [emailRemainder, setEmailRemainder] = createSignal<EmailRemainder>()
 
@@ -39,10 +40,10 @@ export function Email({}: EmailProps) {
 	})
 
 	return (
-		<div>
-			<Header email={() => email()!} emailRemainder={emailRemainder} />
-			<Attachments email={() => email()!} emailRemainder={emailRemainder} />
-			<Body emailRemainder={emailRemainder} />
+		<div flex flex-col overflow-y-hidden h-screen>
+			<Header email={mustEmail} emailRemainder={emailRemainder} />
+			<Attachments email={mustEmail} emailRemainder={emailRemainder} />
+			<Body email={mustEmail} emailRemainder={emailRemainder} />
 		</div>
 	)
 }
@@ -162,28 +163,29 @@ function Attachments({ emailRemainder, email }: AttachmentsProps) {
 }
 
 interface BodyProps {
+	email: Accessor<EmailBase>
 	emailRemainder: Accessor<EmailRemainder | undefined>
 }
 
-function Body({ emailRemainder }: BodyProps) {
-	const htmlBody = () => emailRemainder()?.htmlBody || null
+function Body({ email, emailRemainder }: BodyProps) {
+	const htmlBody = () => emailRemainder()?.htmlBody ?? ""
 	const fallbackBody = () => emailRemainder()?.textBody ?? ""
 
 	return (
-		<div p-4>
-			<Show
-				when={htmlBody()}
-				fallback={
-					<>
-						<pre innerText={fallbackBody()} />
-						<ContentTypeHint kind="text/plain" />
-					</>
-				}
-			>
-				{(html) => <HtmlBody html={html} plain={fallbackBody} />}
-			</Show>
-			{/* <pre>{JSON.stringify(email(), null, 4)}</pre> */}
-		</div>
+		<Switch>
+			<Match when={email().bodyType === "text"}>
+				<div p-4 flex-1 overflow-y-auto>
+					<pre innerText={fallbackBody()} />
+					<ContentTypeHint kind="text/plain" />
+				</div>
+			</Match>
+			<Match when={email().bodyType === "html"}>
+				<div flex-1>
+					<HtmlBody email={email} html={htmlBody} plain={fallbackBody} />
+					{/* <pre>{JSON.stringify(email(), null, 4)}</pre> */}
+				</div>
+			</Match>
+		</Switch>
 	)
 }
 
@@ -209,13 +211,13 @@ function HtmlBodyViewButton({
 	)
 }
 
-function HtmlBody({
-	html,
-	plain,
-}: {
+interface HtmlBodyProps {
+	email: Accessor<EmailBase>
 	html: Accessor<string>
 	plain: Accessor<string>
-}) {
+}
+
+function HtmlBody({ email, html, plain }: HtmlBodyProps) {
 	const [view, setView] = createSignal<"preview" | "plain" | "html">("preview")
 
 	const isPreview = () => view() === "preview"
@@ -223,8 +225,8 @@ function HtmlBody({
 	const isHtml = () => view() === "html"
 
 	return (
-		<>
-			<div flex gap-1>
+		<div flex flex-col h-full>
+			<div flex gap-1 p-4>
 				<HtmlBodyViewButton
 					onclick={() => setView("preview")}
 					selected={isPreview}
@@ -240,8 +242,13 @@ function HtmlBody({
 			</div>
 			<Switch>
 				<Match when={isPreview()}>
-					<div innerHTML={html()} />
-					<ContentTypeHint kind="text/html" />
+					<iframe
+						flex-1
+						src={getUrl(`/api/emails/${email().id}/page`)}
+						w-full
+						bg-zinc-300
+						h-100
+					/>
 				</Match>
 				<Match when={isPlain()}>
 					<Show
@@ -252,14 +259,16 @@ function HtmlBody({
 							</p>
 						}
 					>
-						<pre innerText={plain()} />
+						<pre p-4 overflow-y-auto innerText={plain()} />
 					</Show>
 				</Match>
 				<Match when={isHtml()}>
-					<Code lang="xml" code={html} />
+					<div p-4 overflow-y-auto>
+						<Code lang="xml" code={html} />
+					</div>
 				</Match>
 			</Switch>
-		</>
+		</div>
 	)
 }
 

@@ -108,6 +108,7 @@ type Email struct {
 	ID       ulid.ULID `json:"id"`
 	RealDate time.Time `json:"realDate"`
 	Subject  string    `json:"subject"`
+	BodyType string    `json:"bodyType"` // "html" or "text"
 	BodyHint string    `json:"bodyHint"`
 
 	// Recived form the client
@@ -149,6 +150,7 @@ func ConvertEmail(bluemondayPolicy *bluemonday.Policy, ulid ulid.ULID, em parsem
 		From:     ConvertAddressList(em.From),
 		To:       ConvertAddressList(em.To),
 		BodyHint: bodyHint,
+		BodyType: "text",
 		Remainder: EmailRemainder{
 			Header:          em.Header,
 			ReplyTo:         ConvertAddressList(em.ReplyTo),
@@ -166,11 +168,15 @@ func ConvertEmail(bluemondayPolicy *bluemonday.Policy, ulid ulid.ULID, em parsem
 			ResentBcc:       ConvertAddressList(em.ResentBcc),
 			ResentMessageID: em.ResentMessageID,
 			ContentType:     em.ContentType,
-			HTMLBody:        bluemondayPolicy.Sanitize(em.HTMLBody),
+			HTMLBody:        em.HTMLBody,
 			TextBody:        em.TextBody,
 			Attachments:     attachments,
 			EmbeddedFiles:   embeddedFiles,
 		},
+	}
+
+	if em.HTMLBody != "" {
+		resp.BodyType = "html"
 	}
 
 	if resp.Sender == nil && realFrom != "" {
