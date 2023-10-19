@@ -11,7 +11,6 @@ import (
 	"github.com/DusanKasan/parsemail"
 	"github.com/emersion/go-smtp"
 	"github.com/fasthttp/websocket"
-	"github.com/microcosm-cc/bluemonday"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -25,10 +24,9 @@ type EmailCredentials struct {
 
 // The Backend implements SMTP server methods.
 type Backend struct {
-	Credentials      *EmailCredentials
-	Entropy          *rand.Rand
-	BluemondayPolicy *bluemonday.Policy
-	MaxEmails        int
+	Credentials *EmailCredentials
+	Entropy     *rand.Rand
+	MaxEmails   int
 }
 
 // NewSession implements smtp.Backend
@@ -101,7 +99,6 @@ func (s *Session) Data(r io.Reader) error {
 	ms := ulid.Timestamp(now)
 
 	email, err := ConvertEmail(
-		s.Backend.BluemondayPolicy,
 		ulid.MustNew(ms, s.Backend.Entropy),
 		emailContents,
 		now,
@@ -153,9 +150,8 @@ func StartEmailServer(opts StartEmailServerOptions) {
 	}
 
 	backend := &Backend{
-		Entropy:          rand.New(rand.NewSource(time.Now().UnixNano())),
-		BluemondayPolicy: bluemonday.UGCPolicy(),
-		MaxEmails:        int(opts.MaxEmails),
+		Entropy:   rand.New(rand.NewSource(time.Now().UnixNano())),
+		MaxEmails: int(opts.MaxEmails),
 	}
 
 	if opts.Username != "" && opts.Password != "" {
