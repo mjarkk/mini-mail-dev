@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/DusanKasan/parsemail"
-	"github.com/microcosm-cc/bluemonday"
+	"github.com/mjarkk/mini-mail-dev/go/sanitize"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -120,7 +120,7 @@ type Email struct {
 }
 
 // ConvertEmail converts parsemail.Email to a Email
-func ConvertEmail(bluemondayPolicy *bluemonday.Policy, ulid ulid.ULID, em parsemail.Email, realDate time.Time, realFrom, realTo string) (Email, error) {
+func ConvertEmail(ulid ulid.ULID, em parsemail.Email, realDate time.Time, realFrom, realTo string) (Email, error) {
 	attachments, err := ConvertAttachmentList(em.Attachments)
 	if err != nil {
 		return Email{}, err
@@ -140,6 +140,11 @@ func ConvertEmail(bluemondayPolicy *bluemonday.Policy, ulid ulid.ULID, em parsem
 	).Replace(em.TextBody)
 	if len(bodyHint) > 100 {
 		bodyHint = bodyHint[:100] + "..."
+	}
+
+	htmlBody, err := sanitize.Parse(em.HTMLBody)
+	if err != nil {
+		return Email{}, err
 	}
 
 	resp := Email{
@@ -168,7 +173,7 @@ func ConvertEmail(bluemondayPolicy *bluemonday.Policy, ulid ulid.ULID, em parsem
 			ResentBcc:       ConvertAddressList(em.ResentBcc),
 			ResentMessageID: em.ResentMessageID,
 			ContentType:     em.ContentType,
-			HTMLBody:        em.HTMLBody,
+			HTMLBody:        htmlBody,
 			TextBody:        em.TextBody,
 			Attachments:     attachments,
 			EmbeddedFiles:   embeddedFiles,

@@ -246,7 +246,7 @@ function HtmlBody({ email, html, plain }: HtmlBodyProps) {
 						flex-1
 						src={getUrl(`/api/emails/${email().id}/page`)}
 						w-full
-						bg-zinc-300
+						bg-white
 						h-100
 					/>
 				</Match>
