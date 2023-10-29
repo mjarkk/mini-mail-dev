@@ -13,6 +13,15 @@ import { render } from "solid-js/web"
 
 import { App } from "./components/App"
 
+if ((window as any).trustedTypes && (window as any).trustedTypes.createPolicy) {
+	;(window as any).trustedTypes.createPolicy("default", {
+		createHTML: (string: any, sink: any) => {
+			if (sink === "TrustedHTML") return string
+			throw new Error("HTML is not trusted")
+		},
+	})
+}
+
 const root = document.getElementById("root")
 
 render(() => <App />, root!)

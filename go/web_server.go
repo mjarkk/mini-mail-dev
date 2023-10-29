@@ -84,6 +84,13 @@ func StartWebserver(dist embed.FS, opts StartWebserverOptions) {
 	app.Use(cors.New())
 	app.Use(logger.New())
 
+	app.Use(func(c *fiber.Ctx) error {
+		c.Response().Header.Set("Content-Security-Policy", "require-trusted-types-for 'script'")
+		c.Response().Header.Add("Content-Security-Policy", "trusted-types default")
+		c.Response().Header.Set("X-XSS-Protection", "1")
+		return c.Next()
+	})
+
 	apiGroup := app.Group("/api")
 
 	apiGroup.Use(func(c *fiber.Ctx) error {

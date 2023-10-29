@@ -194,7 +194,7 @@ func attributeKeyValueAllowed(tagName, key, value string) (string, bool) {
 		}
 
 		return value, true
-	case "src", "alt", "sizes", "srcset":
+	case "src", "alt":
 		if tagName != "img" {
 			return "", false
 		}
