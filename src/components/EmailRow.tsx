@@ -3,6 +3,7 @@ import {
 	Match,
 	Show,
 	Switch,
+	createEffect,
 	createMemo,
 	createSignal,
 	useContext,
@@ -10,7 +11,7 @@ import {
 import { Address, EmailBase } from "../email"
 import { Accessor, onMount, onCleanup } from "solid-js"
 import { EmailAddr } from "./EmailAddress"
-import { SelectedEmailContext } from "./App"
+import { SearchContext, SelectedEmailContext } from "./App"
 
 export interface EmailsListProps {
 	emails: Accessor<Array<EmailBase> | undefined>
@@ -19,6 +20,7 @@ export interface EmailsListProps {
 
 export function EmailsList({ emails, loading }: EmailsListProps) {
 	const [selectedEmail, selectedEmailActions] = useContext(SelectedEmailContext)
+	const [searchValue, searchActions] = useContext(SearchContext)
 	const [display, setDisplay] = createSignal<"lg" | "md" | "sm">()
 	const getDisplayValue = (w: number) => {
 		if (!w) return undefined
@@ -45,7 +47,22 @@ export function EmailsList({ emails, loading }: EmailsListProps) {
 
 	return (
 		<div ref={(el) => (ref = el)}>
-			<h1 px-3>Emails</h1>
+			<div flex items-center flex-wrap gap-4 justify-between mb-2 px-2 py-4>
+				<h1 m-0>Emails</h1>
+				<input
+					outline-none
+					rounded-lg
+					font-normal
+					border-gray-500
+					focus:border-gray-400
+					placeholder="Search"
+					w-full
+					sm:w-auto
+					px-4
+					py-2
+					onInput={(e) => searchActions.set(e.target.value)}
+				/>
+			</div>
 			<Show
 				when={!loading || !loading()}
 				fallback={

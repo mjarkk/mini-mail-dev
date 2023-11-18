@@ -9,7 +9,7 @@ import {
 } from "solid-js"
 import type { EmailBase } from "../email"
 import { EmailsList, EmailsListProps } from "./EmailRow"
-import { Accessor } from "solid-js"
+import type { Accessor, Setter } from "solid-js"
 import { EmailEventsWebsocket } from "../services/websocket"
 import { fetch } from "../services/fetch"
 
@@ -28,6 +28,12 @@ type SelectedEmailContextType = [
 
 export const SelectedEmailContext = createContext<SelectedEmailContextType>(
 	[] as unknown as SelectedEmailContextType,
+)
+
+type SearchContextType = [Accessor<string>, { set: Setter<string> }]
+
+export const SearchContext = createContext<SearchContextType>(
+	[] as unknown as SearchContextType,
 )
 
 function throttleFn(fn: () => Promise<void>): () => Promise<void> {
@@ -57,13 +63,21 @@ export function App() {
 	const [emails, setEmails] = createSignal<Array<EmailBase>>()
 	const [selectedEmail, setSelectedEmail] = createSignal<EmailBase>()
 
+	const [searchValue, setSearchValue] = createSignal<string>("")
+
 	const fetchEmails = throttleFn(async () => {
-		const response = await fetch("/api/emails")
+		const response = await fetch(`/api/emails?search=${searchValue()}`)
 		const data: Array<EmailBase> = await response.json()
 		setEmails(data)
 	})
 
 	const emailsWebsocket = new EmailEventsWebsocket(fetchEmails)
+
+	createEffect(() => {
+		if (!searchValue()?.length) return
+
+		fetchEmails()
+	})
 
 	createEffect(() => {
 		fetchEmails()
@@ -94,25 +108,34 @@ export function App() {
 		},
 	]
 
+	const searchContext: () => SearchContextType = () => [
+		searchValue,
+		{ set: setSearchValue },
+	]
+
 	return (
 		<SelectedEmailContext.Provider value={selectedEmailContext()}>
-			<div h-full w-full overflow-hidden>
-				<Switch
-					fallback={
-						<EmailsList
-							emails={() => emails() ?? []}
-							loading={() => !emails()}
-						/>
-					}
-				>
-					<Match when={emails() !== undefined && selectedEmail() !== undefined}>
-						<LayoutWithEmail
-							emails={emails}
-							selectedEmail={() => selectedEmail()!}
-						/>
-					</Match>
-				</Switch>
-			</div>
+			<SearchContext.Provider value={searchContext()}>
+				<div h-full w-full overflow-hidden>
+					<Switch
+						fallback={
+							<EmailsList
+								emails={() => emails() ?? []}
+								loading={() => !emails()}
+							/>
+						}
+					>
+						<Match
+							when={emails() !== undefined && selectedEmail() !== undefined}
+						>
+							<LayoutWithEmail
+								emails={emails}
+								selectedEmail={() => selectedEmail()!}
+							/>
+						</Match>
+					</Switch>
+				</div>
+			</SearchContext.Provider>
 		</SelectedEmailContext.Provider>
 	)
 }
