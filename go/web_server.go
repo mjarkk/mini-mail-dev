@@ -69,22 +69,14 @@ func filterEmail(searchValue string, email Email) bool {
 	}
 
 	if email.BodyType == "text" {
-		if compareStrings(email.Remainder.TextBody, searchValue) {
-			return true
-		}
-
-		return false
+		return compareStrings(email.Remainder.TextBody, searchValue)
 	}
 
-	if compareStrings(email.Remainder.HTMLBody, searchValue) {
-		return true
-	}
-
-	return false
+	return compareStrings(email.Remainder.HTMLBody, searchValue)
 }
 
-// ErrorResposne is the response send by the server when an error occurs
-type ErrorResposne struct {
+// ErrorResponse is the response send by the server when an error occurs
+type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
@@ -137,7 +129,7 @@ func StartWebserver(dist embed.FS, opts StartWebserverOptions) {
 			return nil
 		}
 
-		return c.Status(400).JSON(ErrorResposne{
+		return c.Status(400).JSON(ErrorResponse{
 			Error: err.Error(),
 		})
 	})
