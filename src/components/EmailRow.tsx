@@ -3,7 +3,6 @@ import {
 	Match,
 	Show,
 	Switch,
-	createEffect,
 	createMemo,
 	createSignal,
 	useContext,
@@ -20,7 +19,7 @@ export interface EmailsListProps {
 
 export function EmailsList({ emails, loading }: EmailsListProps) {
 	const [selectedEmail, selectedEmailActions] = useContext(SelectedEmailContext)
-	const [searchValue, searchActions] = useContext(SearchContext)
+	const [_, searchActions] = useContext(SearchContext)
 	const [display, setDisplay] = createSignal<"lg" | "md" | "sm">()
 	const getDisplayValue = (w: number) => {
 		if (!w) return undefined
