@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/gofiber/contrib/websocket"
@@ -38,8 +39,44 @@ func unregisterWebsocketConnection(c *websocket.Conn) bool {
 	return false
 }
 
-// ErrorResposne is the response send by the server when an error occurs
-type ErrorResposne struct {
+func compareStrings(s string, str string) bool {
+	return strings.Contains(strings.ToLower(s), strings.ToLower(str))
+}
+
+func filterEmail(searchValue string, email Email) bool {
+	searchValue = strings.ToLower(searchValue)
+
+	if compareStrings(email.Subject, searchValue) {
+		return true
+	}
+
+	if compareStrings(email.Sender.Address, searchValue) {
+		return true
+	}
+
+	if compareStrings(email.Sender.Name, searchValue) {
+		return true
+	}
+
+	for _, ad := range email.To {
+		if compareStrings(ad.Address, searchValue) {
+			return true
+		}
+
+		if compareStrings(ad.Name, searchValue) {
+			return true
+		}
+	}
+
+	if email.BodyType == "text" {
+		return compareStrings(email.Remainder.TextBody, searchValue)
+	}
+
+	return compareStrings(email.Remainder.HTMLBody, searchValue)
+}
+
+// ErrorResponse is the response send by the server when an error occurs
+type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
@@ -92,7 +129,7 @@ func StartWebserver(dist embed.FS, opts StartWebserverOptions) {
 			return nil
 		}
 
-		return c.Status(400).JSON(ErrorResposne{
+		return c.Status(400).JSON(ErrorResponse{
 			Error: err.Error(),
 		})
 	})
@@ -114,10 +151,16 @@ func StartWebserver(dist embed.FS, opts StartWebserverOptions) {
 	}))
 
 	apiGroup.Get("/emails", func(c *fiber.Ctx) error {
-		emailsCopy := make([]*Email, len(emails))
+		searchValue := c.Query("search")
+
+		emailsCopy := []*Email{}
 
 		for idx := 0; idx < len(emails); idx++ {
-			emailsCopy[len(emails)-1-idx] = &emails[idx]
+			if len(searchValue) > 0 && !filterEmail(searchValue, emails[idx]) {
+				continue
+			}
+
+			emailsCopy = append(emailsCopy, &emails[idx])
 		}
 
 		return c.JSON(emailsCopy)
