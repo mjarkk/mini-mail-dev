@@ -1,6 +1,9 @@
 import { Match, Portal, Switch } from "solid-js/web"
 import { Attachment } from "../email"
 import { isImage, isPdf } from "./AttachmentButton"
+import { Show, createEffect } from "solid-js"
+import { createSignal } from "solid-js"
+import { AttachmentIcon } from "./AttachmentIcon"
 
 export interface AttachmentModalProps {
 	onClose: () => void
@@ -41,20 +44,40 @@ export function AttachmentModal({
 				left-0
 				h-screen
 				w-screen
+				p-10
 				bg="black/40"
 				onClick={modalClick}
 			>
-				<div mx-auto bg-white rounded max-w="800px" my-10 text-black shadow-xl>
-					<div overflow-hidden rounded>
-						<div p-6 flex justify-between items-center>
-							<p m-0>{attachment().filename}</p>
-							<button onClick={downloadAttachment} bg="white hover:zinc-300">Download</button>
-						</div>
-						<ShowAttachment
-							attachment={attachment}
-							attachmentUrl={attachmentUrl}
-						/>
+				<div
+					mx-auto
+					bg-zinc-900
+					rounded
+					max-w="800px"
+					h-full
+					shadow-xl
+					overflow-hidden
+					flex
+					flex-col
+				>
+					<div
+						p-6
+						flex
+						justify-between
+						items-center
+						border-0
+						border-zinc-800
+						border-b
+						border-b-solid
+					>
+						<p m-0>{attachment().filename}</p>
+						<button onClick={downloadAttachment} border-zinc-500>
+							Download
+						</button>
 					</div>
+					<ShowAttachment
+						attachment={attachment}
+						attachmentUrl={attachmentUrl}
+					/>
 				</div>
 			</div>
 		</Portal>
@@ -67,14 +90,53 @@ interface ShowAttachmentProps {
 }
 
 function ShowAttachment({ attachment, attachmentUrl }: ShowAttachmentProps) {
+	const [fileUrl, setFileUrl] = createSignal<string | undefined>(undefined)
+
+	const getData = async () => {
+		const response = await fetch(attachmentUrl())
+		const blob = await response.blob()
+		const url = URL.createObjectURL(blob)
+		setFileUrl(url)
+	}
+
+	createEffect(() => {
+		getData()
+	})
+
 	return (
-		<Switch fallback={<p>Geen preview mogelijk</p>}>
-			<Match when={isImage(attachment().contentType)}>
-				<img src={attachmentUrl()} />
-			</Match>
-			<Match when={isPdf(attachment().contentType)}>
-				<iframe src={attachmentUrl()} />
-			</Match>
-		</Switch>
+		<Show when={fileUrl()}>
+			<Switch
+				fallback={
+					<ContentNotDisplayable contentType={() => attachment().contentType} />
+				}
+			>
+				<Match when={isImage(attachment().contentType)}>
+					<div
+						h-full
+						w-full
+						style={{ "background-image": `url(${fileUrl()})` }}
+						bg-center
+						bg-contain
+						bg-no-repeat
+					/>
+				</Match>
+				<Match when={isPdf(attachment().contentType)}>
+					<iframe src={fileUrl()} />
+				</Match>
+			</Switch>
+		</Show>
+	)
+}
+
+interface ContentNotDisplayableProps {
+	contentType: () => string
+}
+
+function ContentNotDisplayable({ contentType }: ContentNotDisplayableProps) {
+	return (
+		<p flex flex-col justify-center items-center h-full text-zinc-400>
+			<AttachmentIcon contentType={contentType} />
+			<span mt-3>Content not displayable</span>
+		</p>
 	)
 }

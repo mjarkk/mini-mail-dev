@@ -138,8 +138,6 @@ function Attachments({ emailRemainder, email }: AttachmentsProps) {
 
 	const hasAttachments = () => (emailRemainder()?.attachments?.length ?? 0) > 0
 
-	let modalRef: HTMLDivElement | undefined;
-
 	return (
 		<>
 			<Show when={hasAttachments()}>
@@ -151,7 +149,7 @@ function Attachments({ emailRemainder, email }: AttachmentsProps) {
 						<For each={emailRemainder()!.attachments}>
 							{(attachment, index) => (
 								<AttachmentButton
-									{...attachment}
+									attachment={() => attachment}
 									onclick={() => setShowAttachment(index)}
 								/>
 							)}
@@ -162,7 +160,11 @@ function Attachments({ emailRemainder, email }: AttachmentsProps) {
 			<Show when={showAttachment() !== undefined}>
 				<AttachmentModal
 					onClose={() => setShowAttachment(undefined)}
-					attachmentUrl={() => getUrl("/api/emails/" + email().id + "/attachments/" + showAttachment())}
+					attachmentUrl={() =>
+						getUrl(
+							"/api/emails/" + email().id + "/attachments/" + showAttachment(),
+						)
+					}
 					attachment={() => emailRemainder()!.attachments![showAttachment()!]}
 				/>
 			</Show>
@@ -262,16 +264,16 @@ function HtmlBody({ email, html, plain }: HtmlBodyProps) {
 					<Show
 						when={plain()}
 						fallback={
-							<p text-zinc-500>
+							<p p-4 pt-0 text-zinc-500>
 								This email does not have a plain text fallback 😞
 							</p>
 						}
 					>
-						<pre p-4 overflow-y-auto innerText={plain()} />
+						<pre p-4 pt-0 overflow-y-auto innerText={plain()} />
 					</Show>
 				</Match>
 				<Match when={isHtml()}>
-					<div p-4 overflow-y-auto>
+					<div p-4 pt-0 overflow-y-auto>
 						<Code lang="xml" code={html} />
 					</div>
 				</Match>
@@ -286,7 +288,4 @@ function ContentTypeHint({ kind }: { kind: "text/plain" | "text/html" }) {
 			{kind}
 		</p>
 	)
-}
-function useSignal(): [any, any] {
-	throw new Error("Function not implemented.")
 }

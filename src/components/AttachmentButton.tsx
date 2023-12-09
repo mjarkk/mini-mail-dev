@@ -1,8 +1,5 @@
 import { Attachment } from "../email"
-import IconImage from "~icons/material-symbols/image-outline"
-import IconFilePresent from "~icons/material-symbols/file-present-outline"
-import IconPictureAsPdf from "~icons/material-symbols/picture-as-pdf-outline"
-import { Match, Switch } from "solid-js"
+import { AttachmentIcon } from "./AttachmentIcon"
 
 export const isPdf = (t: string) =>
 	t === "application/pdf" ||
@@ -11,27 +8,19 @@ export const isPdf = (t: string) =>
 
 export const isImage = (t: string) => t.startsWith("image/")
 
-interface AttachmentButtonProps extends Attachment {
+interface AttachmentButtonProps {
 	onclick?: () => void
+	attachment: () => Attachment
 }
 
 export function AttachmentButton({
-	contentType,
-	filename,
+	attachment,
 	onclick,
 }: AttachmentButtonProps) {
-	const iconStyle = { height: "30px", width: "30px" }
 	return (
 		<button onclick={onclick} p-4 border-0 w="180px">
-			<Switch fallback={<IconFilePresent style={iconStyle} />}>
-				<Match when={isImage(contentType)}>
-					<IconImage style={iconStyle} />
-				</Match>
-				<Match when={isPdf(contentType)}>
-					<IconPictureAsPdf style={iconStyle} />
-				</Match>
-			</Switch>
-			<div truncate>{filename}</div>
+			<AttachmentIcon contentType={() => attachment().contentType} />
+			<div truncate>{attachment().filename}</div>
 		</button>
 	)
 }
