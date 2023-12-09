@@ -1,7 +1,7 @@
 import { Match, Portal, Switch } from "solid-js/web"
 import { Attachment } from "../email"
 import { isImage, isPdf } from "./AttachmentButton"
-import { Show, createEffect } from "solid-js"
+import { Show, createEffect, onCleanup, onMount } from "solid-js"
 import { createSignal } from "solid-js"
 import { AttachmentIcon } from "./AttachmentIcon"
 
@@ -34,6 +34,19 @@ export function AttachmentModal({
 		link.click()
 	}
 
+	const keyboardEvent = (e: KeyboardEvent) => {
+		if (e.key === "Escape") {
+			onClose()
+		}
+	}
+
+	onMount(() => {
+		document.addEventListener("keydown", keyboardEvent)
+	})
+	onCleanup(() => {
+		document.removeEventListener("keydown", keyboardEvent)
+	})
+
 	return (
 		<Portal mount={document.body}>
 			<div
@@ -59,25 +72,32 @@ export function AttachmentModal({
 					flex
 					flex-col
 				>
-					<div
-						p-6
-						flex
-						justify-between
-						items-center
-						border-0
-						border-zinc-800
-						border-b
-						border-b-solid
-					>
+					<div p-6 border-0 border-zinc-800 border-b border-b-solid>
 						<p m-0>{attachment().filename}</p>
-						<button onClick={downloadAttachment} border-zinc-500>
-							Download
-						</button>
 					</div>
 					<ShowAttachment
 						attachment={attachment}
 						attachmentUrl={attachmentUrl}
 					/>
+					<div
+						py-4
+						px-6
+						flex
+						justify-end
+						gap-2
+						items-center
+						border-0
+						border-zinc-800
+						border-t
+						border-t-solid
+					>
+						<button onClick={onClose} border-zinc-500>
+							Close
+						</button>
+						<button onClick={downloadAttachment} border-zinc-500>
+							Download
+						</button>
+					</div>
 				</div>
 			</div>
 		</Portal>

@@ -6,6 +6,7 @@ import {
 	createSignal,
 	lazy,
 	onCleanup,
+	onMount,
 } from "solid-js"
 import type { EmailBase } from "../email"
 import { EmailsList, EmailsListProps } from "./EmailRow"
@@ -53,8 +54,8 @@ function throttleFn(fn: () => Promise<void>): () => Promise<void> {
 			} catch (e) {
 				console.error(e)
 			}
+			await new Promise((res) => setTimeout(res, 500))
 		}
-		await new Promise((res) => setTimeout(res, 500))
 		running = false
 	}
 }
@@ -62,11 +63,16 @@ function throttleFn(fn: () => Promise<void>): () => Promise<void> {
 export function App() {
 	const [emails, setEmails] = createSignal<Array<EmailBase>>()
 	const [selectedEmail, setSelectedEmail] = createSignal<EmailBase>()
-
 	const [searchValue, setSearchValue] = createSignal<string>("")
 
 	const fetchEmails = throttleFn(async () => {
-		const response = await fetch(`/api/emails?search=${searchValue()}`)
+		let url = "/api/emails"
+
+		if (searchValue()?.length) {
+			url += "?search=" + encodeURIComponent(searchValue())
+		}
+
+		const response = await fetch(url)
 		const data: Array<EmailBase> = await response.json()
 		setEmails(data)
 	})
@@ -74,13 +80,11 @@ export function App() {
 	const emailsWebsocket = new EmailEventsWebsocket(fetchEmails)
 
 	createEffect(() => {
-		if (!searchValue()?.length) return
-
+		searchValue()
 		fetchEmails()
 	})
 
-	createEffect(() => {
-		fetchEmails()
+	onMount(() => {
 		emailsWebsocket.start()
 	})
 
