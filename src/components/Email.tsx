@@ -10,11 +10,13 @@ import {
 	lazy,
 	useContext,
 } from "solid-js"
-import type { Address, EmailBase, EmailRemainder } from "../email"
+import type { Address, Attachment, EmailBase, EmailRemainder } from "../email"
 import { EmailAddr } from "./EmailAddress"
 import { SelectedEmailContext } from "./App"
 import { AttachmentButton } from "./AttachmentButton"
 import { fetch, getUrl } from "../services/fetch"
+import { Portal } from "solid-js/web"
+import { AttachmentModal } from "./AttachmentModal"
 
 const Code = lazy(() => import("./Code").then((m) => ({ default: m.Code })))
 
@@ -132,33 +134,39 @@ interface AttachmentsProps {
 }
 
 function Attachments({ emailRemainder, email }: AttachmentsProps) {
-	const downloadAttachment = (filename: string, index: number) => {
-		const link = document.createElement("a")
-		link.download = filename
-		link.href = getUrl("/api/emails/" + email().id + "/attachments/" + index)
-		link.click()
-	}
+	const [showAttachment, setShowAttachment] = createSignal<number>()
 
 	const hasAttachments = () => (emailRemainder()?.attachments?.length ?? 0) > 0
 
+	let modalRef: HTMLDivElement | undefined;
+
 	return (
-		<Show when={hasAttachments()}>
-			<div border-0 border-b border-b-solid border-zinc-800 p-4>
-				<p m-0 text-zinc-500>
-					Attachments:
-				</p>
-				<div flex flex-wrap gap-2 mt-1>
-					<For each={emailRemainder()!.attachments}>
-						{(attachment, index) => (
-							<AttachmentButton
-								{...attachment}
-								onclick={() => downloadAttachment(attachment.filename, index())}
-							/>
-						)}
-					</For>
+		<>
+			<Show when={hasAttachments()}>
+				<div border-0 border-b border-b-solid border-zinc-800 p-4>
+					<p m-0 text-zinc-500>
+						Attachments:
+					</p>
+					<div flex flex-wrap gap-2 mt-1>
+						<For each={emailRemainder()!.attachments}>
+							{(attachment, index) => (
+								<AttachmentButton
+									{...attachment}
+									onclick={() => setShowAttachment(index)}
+								/>
+							)}
+						</For>
+					</div>
 				</div>
-			</div>
-		</Show>
+			</Show>
+			<Show when={showAttachment() !== undefined}>
+				<AttachmentModal
+					onClose={() => setShowAttachment(undefined)}
+					attachmentUrl={() => getUrl("/api/emails/" + email().id + "/attachments/" + showAttachment())}
+					attachment={() => emailRemainder()!.attachments![showAttachment()!]}
+				/>
+			</Show>
+		</>
 	)
 }
 
@@ -278,4 +286,7 @@ function ContentTypeHint({ kind }: { kind: "text/plain" | "text/html" }) {
 			{kind}
 		</p>
 	)
+}
+function useSignal(): [any, any] {
+	throw new Error("Function not implemented.")
 }

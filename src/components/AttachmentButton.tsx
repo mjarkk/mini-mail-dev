@@ -4,12 +4,12 @@ import IconFilePresent from "~icons/material-symbols/file-present-outline"
 import IconPictureAsPdf from "~icons/material-symbols/picture-as-pdf-outline"
 import { Match, Switch } from "solid-js"
 
-const isPdf = (t: string) =>
+export const isPdf = (t: string) =>
 	t === "application/pdf" ||
 	t === "application/x-pdf" ||
 	t === "application/x-bzpdf"
 
-const isImage = (t: string) => t.startsWith("image/")
+export const isImage = (t: string) => t.startsWith("image/")
 
 interface AttachmentButtonProps extends Attachment {
 	onclick?: () => void
