@@ -10,12 +10,11 @@ import {
 	lazy,
 	useContext,
 } from "solid-js"
-import type { Address, Attachment, EmailBase, EmailRemainder } from "../email"
+import type { Address, EmailBase, EmailRemainder } from "../email"
 import { EmailAddr } from "./EmailAddress"
 import { SelectedEmailContext } from "./App"
 import { AttachmentButton } from "./AttachmentButton"
 import { fetch, getUrl } from "../services/fetch"
-import { Portal } from "solid-js/web"
 import { AttachmentModal } from "./AttachmentModal"
 
 const Code = lazy(() => import("./Code").then((m) => ({ default: m.Code })))

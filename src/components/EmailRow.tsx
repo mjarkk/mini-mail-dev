@@ -11,6 +11,7 @@ import { Address, EmailBase } from "../email"
 import { Accessor, onMount, onCleanup } from "solid-js"
 import { EmailAddr } from "./EmailAddress"
 import { SearchContext, SelectedEmailContext } from "./App"
+import IconClose from "~icons/material-symbols/close-small"
 
 export interface EmailsListProps {
 	emails: Accessor<Array<EmailBase> | undefined>
@@ -19,7 +20,7 @@ export interface EmailsListProps {
 
 export function EmailsList({ emails, loading }: EmailsListProps) {
 	const [selectedEmail, selectedEmailActions] = useContext(SelectedEmailContext)
-	const [_, searchActions] = useContext(SearchContext)
+	const [search, searchActions] = useContext(SearchContext)
 	const [display, setDisplay] = createSignal<"lg" | "md" | "sm">()
 	const getDisplayValue = (w: number) => {
 		if (!w) return undefined
@@ -48,19 +49,35 @@ export function EmailsList({ emails, loading }: EmailsListProps) {
 		<div ref={(el) => (ref = el)}>
 			<div flex items-center flex-wrap gap-4 justify-between mb-2 px-2 py-4>
 				<h1 m-0>Emails</h1>
-				<input
-					outline-none
-					rounded-lg
-					font-normal
-					border-gray-500
-					focus:border-gray-400
-					placeholder="Search"
-					w-full
-					sm:w-auto
-					px-4
-					py-2
-					onInput={(e) => searchActions.set(e.target.value)}
-				/>
+				<div flex justify-center items-center gap-2>
+					<Show when={search()}>
+						<button
+							outline-none
+							rounded-lg
+							p-2
+							bg-transparent
+							border-gray-500
+							hover:border-gray-400
+							onclick={() => searchActions.set("")}
+						>
+							<IconClose />
+						</button>
+					</Show>
+					<input
+						outline-none
+						rounded-lg
+						font-normal
+						border-gray-500
+						focus:border-gray-400
+						placeholder="Search"
+						w-full
+						sm:w-auto
+						px-4
+						py-2
+						value={search()}
+						onInput={(e) => searchActions.set(e.target.value)}
+					/>
+				</div>
 			</div>
 			<Show
 				when={!loading || !loading()}
