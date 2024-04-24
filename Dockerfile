@@ -2,7 +2,7 @@ ARG BUILDPLATFORM
 ARG TARGETOS
 ARG TARGETARCH
 
-FROM node:21-slim AS frontend
+FROM --platform=linux/amd64 node:21-slim AS frontend
 
 COPY . .
 
