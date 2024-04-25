@@ -4,9 +4,10 @@ ARG TARGETARCH
 
 FROM --platform=linux/amd64 node:21-slim AS frontend
 
-COPY . .
+COPY . /app
+WORKDIR /app
 
-RUN npm install && npm run build
+RUN npm i && npm run build
 
 FROM --platform=${BUILDPLATFORM:-linux/amd64} golang:1.21
 
@@ -18,7 +19,7 @@ RUN go mod download
 
 COPY go go
 COPY main.go .
-COPY --from=frontend dist dist
+COPY --from=frontend /app/dist dist
 
 RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build -o /usr/bin/mini-mail-dev && \
