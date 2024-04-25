@@ -22,8 +22,8 @@ func main() {
 	ifEmptyNotRequired := ", if empty no credentials required"
 
 	defaultMaxEmails := uint16(200)
-	defaultSMTPAddr := "localhost:1025"
-	defaultHTTPAddr := "localhost:1080"
+	defaultSMTPAddr := "0.0.0.0:1025"
+	defaultHTTPAddr := "0.0.0.0:1080"
 	defaultSMPTDomain := "localhost"
 
 	argMaxEmails := pflag.Uint16("max-emails", defaultMaxEmails, "The max amount of emails to keep")
@@ -53,7 +53,7 @@ func main() {
 			*argMaxEmails = uint16(parsedEnvMaxEmails)
 		}
 	}
-	if *argSMTPAddr == defaultHTTPAddr && envSMTPAddr != "" {
+	if *argSMTPAddr == defaultSMTPAddr && envSMTPAddr != "" {
 		*argSMTPAddr = envSMTPAddr
 	}
 	if *argHTTPAddr == defaultHTTPAddr && envHTTPAddr != "" {

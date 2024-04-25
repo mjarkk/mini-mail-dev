@@ -60,34 +60,19 @@ mini-mail-dev
 
 Options:
 
-```
-Usage of mini-mail-dev
-    --disable-web                 Disable the web interface
-    --http string                 HTTP server address (default "localhost:1080")
-    --http-pass string            HTTP server address, if empty no credentials required
-    --http-user string            HTTP server username, if empty no credentials required
-    --max-emails uint16           The max amount of emails to keep (default 200)
-    --smtp string                 SMTP server address (default "localhost:1025")
-    --smtp-domain string          SMTP server domain (default "localhost")
-    --smtp-incoming-pass string   SMTP server password, if empty no credentials required
-    --smtp-incoming-user string   SMTP server username, if empty no credentials required
-```
+| name | Flag | Envourment variable | Default |
+|---|---|---|---|
+| Disable web | `--disable-web` | `DISABLE_WEB` | `false` |
+| HTTP address | `--http` | `HTTP_ADDR` | `0.0.0.0:1080` |
+| HTTP password | `--http-pass` | `HTTP_PASS` | |
+| HTTP username | `--http-user` | `HTTP_USER` | |
+| Max emails | `--max-emails` | `MAX_EMAILS` | `200` |
+| SMTP address | `--smtp` | `SMTP_ADDR` | `0.0.0.0:1025` |
+| SMTP domain | `--smtp-domain` | `SMTP_DOMAIN` | `localhost` |
+| SMTP incoming password | `--smtp-incoming-pass` | `SMTP_INCOMING_PASS` | |
+| SMTP incoming username | `--smtp-incoming-user` | `SMTP_INCOMING_USER` | |
 
-Environment variables
-
-_These are used the same way as the arguments_
-
-```
-DISABLE_WEB
-HTTP_ADDR
-HTTP_PASS
-HTTP_USER
-MAX_EMAILS
-SMTP_ADDR
-SMTP_DOMAIN
-SMTP_INCOMING_PASS
-SMTP_INCOMING_USER
-```
+*Note that authentication is only enabled if you provided the relevant envourment variables*
 
 ## Build & Run
 
