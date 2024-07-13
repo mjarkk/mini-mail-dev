@@ -91,10 +91,10 @@ export function AttachmentModal({
 						border-t
 						border-t-solid
 					>
-						<button onClick={onClose} border-zinc-500>
+						<button onClick={onClose} bg-zinc-700 hover:bg-zinc-600>
 							Close
 						</button>
-						<button onClick={downloadAttachment} border-zinc-500>
+						<button onClick={downloadAttachment} bg-zinc-700 hover:bg-zinc-600>
 							Download
 						</button>
 					</div>

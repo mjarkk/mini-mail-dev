@@ -13,12 +13,10 @@ export function Header({ setSearch, search }: HeaderProps) {
 			<div flex justify-center items-center gap-2>
 				<Show when={search()}>
 					<button
-						outline-none
-						rounded-lg
+						rounded-md
 						p-2
-						bg-transparent
-						border-gray-500
-						hover:border-gray-400
+						bg-zinc-700
+						hover:bg-zinc-600
 						onclick={() => setSearch("")}
 					>
 						<IconClose />
@@ -26,10 +24,11 @@ export function Header({ setSearch, search }: HeaderProps) {
 				</Show>
 				<input
 					outline-none
-					rounded-lg
+					rounded-md
+					bg-zinc-800
+					hover:bg-zinc-700
+					transition-colors
 					font-normal
-					border-gray-500
-					focus:border-gray-400
 					placeholder="Search"
 					sm:w-auto
 					px-4

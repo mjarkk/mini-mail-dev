@@ -2,6 +2,7 @@ import { Accessor, createMemo, For, useContext } from "solid-js"
 import { Address, EmailBase, EmailRemainder } from "../../email"
 import { SelectedEmailContext } from "../App"
 import { EmailAddr } from "../EmailAddress"
+import IconClose from "~icons/material-symbols/close-small"
 
 export interface HeaderProps {
 	email: Accessor<EmailBase>
@@ -59,11 +60,25 @@ export function Header({ email, emailRemainder }: HeaderProps) {
 				border-b-solid
 				border-zinc-800
 			>
-				<h2 font-bold m-0>
+				<h2 font-bold m-0 flex items-center>
+					<button
+						onclick={selectedEmailActions.deSelect}
+						p-0
+						text-zinc-400
+						inline-flex
+						mt-1
+						mr-2
+					>
+						<IconClose />
+					</button>
 					{email().subject}
 				</h2>
 				<div>
-					<button border border-zinc-400 onclick={selectedEmailActions.delete}>
+					<button
+						bg-zinc-700
+						hover:bg-zinc-600
+						onclick={selectedEmailActions.delete}
+					>
 						Delete
 					</button>
 				</div>
