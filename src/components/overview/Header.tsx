@@ -8,8 +8,8 @@ export interface HeaderProps {
 
 export function Header({ setSearch, search }: HeaderProps) {
 	return (
-		<div flex items-center flex-wrap gap-4 justify-between mb-2 px-2 py-4>
-			<h1 m-0>Emails</h1>
+		<div flex items-center flex-wrap gap-4 justify-between mb-2 p-4 md:px-6>
+			<h1 m-0>Inbox</h1>
 			<div flex justify-center items-center gap-2>
 				<Show when={search()}>
 					<button
@@ -31,10 +31,10 @@ export function Header({ setSearch, search }: HeaderProps) {
 					border-gray-500
 					focus:border-gray-400
 					placeholder="Search"
-					w-full
 					sm:w-auto
 					px-4
 					py-2
+					style={{ width: "200px" }}
 					value={search()}
 					onInput={(e) => setSearch(e.target.value)}
 				/>

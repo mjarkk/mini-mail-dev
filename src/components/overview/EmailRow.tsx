@@ -29,7 +29,9 @@ export function EmailRow({ display, selected, email, onClick }: EmailRowProps) {
 			border-t
 			border-t-solid
 			border-zinc-800
-			p-3
+			py-3
+			px-3
+			md:px-6
 			bg={selected() ? "zinc-800" : "zinc-950"}
 			rounded-none
 			text-zinc-500
