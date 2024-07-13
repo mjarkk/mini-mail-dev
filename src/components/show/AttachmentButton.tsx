@@ -1,4 +1,4 @@
-import { Attachment } from "../email"
+import { Attachment } from "../../email"
 import { AttachmentIcon } from "./AttachmentIcon"
 
 export const isPdf = (t: string) =>

@@ -1,5 +1,5 @@
 import { Match, Portal, Switch } from "solid-js/web"
-import { Attachment } from "../email"
+import { Attachment } from "../../email"
 import { isImage, isPdf } from "./AttachmentButton"
 import { Show, createEffect, onCleanup, onMount } from "solid-js"
 import { createSignal } from "solid-js"
@@ -141,7 +141,7 @@ function ShowAttachment({ attachment, attachmentUrl }: ShowAttachmentProps) {
 					/>
 				</Match>
 				<Match when={isPdf(attachment().contentType)}>
-					<iframe src={fileUrl()} />
+					<iframe h-full src={fileUrl()} />
 				</Match>
 			</Switch>
 		</Show>

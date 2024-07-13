@@ -39,40 +39,53 @@ func unregisterWebsocketConnection(c *websocket.Conn) bool {
 	return false
 }
 
-func compareStrings(s string, str string) bool {
-	return strings.Contains(strings.ToLower(s), strings.ToLower(str))
+func filterSanitize(input string) string {
+	return strings.TrimSpace(strings.ToLower(input))
+}
+
+func comparitorFn(input string) func(s string) bool {
+	input = filterSanitize(input)
+	if input == "" {
+		return func(s string) bool {
+			return true
+		}
+	}
+
+	return func(s string) bool {
+		return strings.Contains(filterSanitize(s), input)
+	}
 }
 
 func filterEmail(searchValue string, email Email) bool {
-	searchValue = strings.ToLower(searchValue)
+	comparitor := comparitorFn(searchValue)
 
-	if compareStrings(email.Subject, searchValue) {
+	if comparitor(email.Subject) {
 		return true
 	}
 
-	if compareStrings(email.Sender.Address, searchValue) {
+	if comparitor(email.Sender.Address) {
 		return true
 	}
 
-	if compareStrings(email.Sender.Name, searchValue) {
+	if comparitor(email.Sender.Name) {
 		return true
 	}
 
 	for _, ad := range email.To {
-		if compareStrings(ad.Address, searchValue) {
+		if comparitor(ad.Address) {
 			return true
 		}
 
-		if compareStrings(ad.Name, searchValue) {
+		if comparitor(ad.Name) {
 			return true
 		}
 	}
 
 	if email.BodyType == "text" {
-		return compareStrings(email.Remainder.TextBody, searchValue)
+		return comparitor(email.Remainder.TextBody)
 	}
 
-	return compareStrings(email.Remainder.HTMLBody, searchValue)
+	return comparitor(email.Remainder.HTMLBody)
 }
 
 // ErrorResponse is the response send by the server when an error occurs

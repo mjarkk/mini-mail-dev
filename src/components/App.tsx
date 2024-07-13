@@ -14,7 +14,9 @@ import type { Accessor, Setter } from "solid-js"
 import { EmailEventsWebsocket } from "../services/websocket"
 import { fetch } from "../services/fetch"
 
-const Email = lazy(() => import("./Email").then((m) => ({ default: m.Email })))
+const Email = lazy(() =>
+	import("./show/Email").then((m) => ({ default: m.Email })),
+)
 
 interface SelectedEmailActions {
 	delete: () => void
