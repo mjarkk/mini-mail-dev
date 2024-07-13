@@ -6,9 +6,9 @@ import { Header } from "./Header"
 import { Attachments } from "./Attachments"
 import { Body } from "./Body"
 
-export interface EmailProps {}
+export interface ShowProps {}
 
-export function Email({}: EmailProps) {
+export function Show({}: ShowProps) {
 	const [email] = useContext(SelectedEmailContext)
 	const mustEmail = () => email()!
 

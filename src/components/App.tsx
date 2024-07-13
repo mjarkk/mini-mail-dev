@@ -9,13 +9,13 @@ import {
 	onMount,
 } from "solid-js"
 import type { EmailBase } from "../email"
-import { EmailsList, EmailsListProps } from "./EmailRow"
+import { Overview, OverviewProps } from "./overview/Overview"
 import type { Accessor, Setter } from "solid-js"
 import { EmailEventsWebsocket } from "../services/websocket"
 import { fetch } from "../services/fetch"
 
-const Email = lazy(() =>
-	import("./show/Email").then((m) => ({ default: m.Email })),
+const Show = lazy(() =>
+	import("./show/Show").then((m) => ({ default: m.Show })),
 )
 
 interface SelectedEmailActions {
@@ -125,7 +125,7 @@ export function App() {
 				<div h-full w-full overflow-hidden>
 					<Switch
 						fallback={
-							<EmailsList
+							<Overview
 								emails={() => emails() ?? []}
 								loading={() => !emails()}
 							/>
@@ -134,7 +134,7 @@ export function App() {
 						<Match
 							when={emails() !== undefined && selectedEmail() !== undefined}
 						>
-							<LayoutWithEmail
+							<LeftOverviewRightEmail
 								emails={emails}
 								selectedEmail={() => selectedEmail()!}
 							/>
@@ -146,11 +146,11 @@ export function App() {
 	)
 }
 
-interface LayoutWithEmailProps extends EmailsListProps {
+interface LeftOverviewRightEmailProps extends OverviewProps {
 	selectedEmail: Accessor<EmailBase>
 }
 
-function LayoutWithEmail({ emails }: LayoutWithEmailProps) {
+function LeftOverviewRightEmail({ emails }: LeftOverviewRightEmailProps) {
 	return (
 		<div flex items-stretch>
 			<div
@@ -163,10 +163,10 @@ function LayoutWithEmail({ emails }: LayoutWithEmailProps) {
 				border-r-solid
 				border-zinc-700
 			>
-				<EmailsList emails={emails} />
+				<Overview emails={emails} />
 			</div>
 			<div h-screen overflow-y-auto self-stretch flex-1>
-				<Email />
+				<Show />
 			</div>
 		</div>
 	)
