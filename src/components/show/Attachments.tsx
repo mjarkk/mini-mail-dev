@@ -1,4 +1,4 @@
-import { Accessor, createSignal, For, Show } from "solid-js"
+import { Accessor, createEffect, createSignal, For, Show } from "solid-js"
 import { EmailBase, EmailRemainder } from "../../email"
 import { AttachmentModal } from "./AttachmentModal"
 import { getUrl } from "../../services/fetch"
@@ -13,6 +13,12 @@ export function Attachments({ emailRemainder, email }: AttachmentsProps) {
 	const [showAttachment, setShowAttachment] = createSignal<number>()
 
 	const hasAttachments = () => (emailRemainder()?.attachments?.length ?? 0) > 0
+
+	createEffect(() => {
+		// When the email changes hide the show attachment
+		email()
+		setShowAttachment(undefined)
+	})
 
 	return (
 		<>
@@ -33,7 +39,7 @@ export function Attachments({ emailRemainder, email }: AttachmentsProps) {
 					</div>
 				</div>
 			</Show>
-			<Show when={showAttachment() !== undefined}>
+			<Show when={showAttachment() !== undefined && hasAttachments()}>
 				<AttachmentModal
 					onClose={() => setShowAttachment(undefined)}
 					attachmentUrl={() =>

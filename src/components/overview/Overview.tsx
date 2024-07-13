@@ -35,13 +35,50 @@ export function Overview({ emails, loading }: OverviewProps) {
 		if (width) setDisplay(getDisplayValue(width))
 	}
 
+	const onKeydown = ({ target, key }: KeyboardEvent) => {
+		const currentSelectedEmail = selectedEmail()
+		const currentEmails = emails()
+		if (!currentSelectedEmail || !currentEmails || currentEmails.length < 2) {
+			return
+		}
+
+		const direction: 1 | 0 | -1 =
+			key === "ArrowUp" ? -1 : key === "ArrowDown" ? 1 : 0
+
+		if (direction === 0) {
+			return
+		}
+
+		// Check if we are not focused on a input
+		if (target) {
+			const typedTarget = target as HTMLElement
+			const stopTagNames = new Set(["input", "textarea", "area", "select"])
+			if (stopTagNames.has(typedTarget.tagName.toLowerCase())) {
+				return
+			}
+		}
+
+		for (let idx = 0; idx < currentEmails.length; idx++) {
+			const email = currentEmails[idx]
+			if (email.id === currentSelectedEmail.id) {
+				const newSelectedEmail = currentEmails[idx + direction]
+				if (newSelectedEmail) {
+					selectedEmailActions.select(newSelectedEmail)
+				}
+				break
+			}
+		}
+	}
+
 	onMount(() => {
 		window.addEventListener("resize", onResize)
+		window.addEventListener("keydown", onKeydown)
 		onResize()
 	})
 
 	onCleanup(() => {
 		window.removeEventListener("resize", onResize)
+		window.removeEventListener("keydown", onKeydown)
 	})
 
 	return (
