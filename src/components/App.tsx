@@ -1,5 +1,6 @@
 import {
 	Match,
+	Show,
 	Switch,
 	createContext,
 	createEffect,
@@ -14,8 +15,8 @@ import type { Accessor, Setter } from "solid-js"
 import { EmailEventsWebsocket } from "../services/websocket"
 import { fetch } from "../services/fetch"
 
-const Show = lazy(() =>
-	import("./show/Show").then((m) => ({ default: m.Show })),
+const ShowEmail = lazy(() =>
+	import("./show/Show").then((m) => ({ default: m.ShowEmail })),
 )
 
 interface SelectedEmailActions {
@@ -62,10 +63,13 @@ function throttleFn(fn: () => Promise<void>): () => Promise<void> {
 	}
 }
 
+const calculateIsMobile = () => window.innerWidth < 840
+
 export function App() {
 	const [emails, setEmails] = createSignal<Array<EmailBase>>()
 	const [selectedEmail, setSelectedEmail] = createSignal<EmailBase>()
 	const [searchValue, setSearchValue] = createSignal<string>("")
+	const [isMobile, setIsMobile] = createSignal(calculateIsMobile())
 
 	const fetchEmails = throttleFn(async () => {
 		let url = "/api/emails"
@@ -86,12 +90,19 @@ export function App() {
 		fetchEmails()
 	})
 
+	const onResize = () => {
+		const newIsMobile = calculateIsMobile()
+		if (newIsMobile !== isMobile()) setIsMobile(newIsMobile)
+	}
+
 	onMount(() => {
 		emailsWebsocket.start()
+		window.addEventListener("resize", onResize)
 	})
 
 	onCleanup(() => {
 		emailsWebsocket.close()
+		window.removeEventListener("resize", onResize)
 	})
 
 	const deleteSelected = async () => {
@@ -119,6 +130,9 @@ export function App() {
 		{ set: setSearchValue },
 	]
 
+	const showEmail = () =>
+		emails() !== undefined && selectedEmail() !== undefined
+
 	return (
 		<SelectedEmailContext.Provider value={selectedEmailContext()}>
 			<SearchContext.Provider value={searchContext()}>
@@ -131,9 +145,10 @@ export function App() {
 							/>
 						}
 					>
-						<Match
-							when={emails() !== undefined && selectedEmail() !== undefined}
-						>
+						<Match when={showEmail() && isMobile()}>
+							<ShowEmail />
+						</Match>
+						<Match when={showEmail()}>
 							<LeftOverviewRightEmail
 								emails={emails}
 								selectedEmail={() => selectedEmail()!}
@@ -165,7 +180,7 @@ function LeftOverviewRightEmail({ emails }: LeftOverviewRightEmailProps) {
 			>
 				<Overview emails={emails} />
 			</div>
-			<Show />
+			<ShowEmail />
 		</div>
 	)
 }

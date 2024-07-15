@@ -167,7 +167,7 @@ func StartWebserver(dist embed.FS, opts StartWebserverOptions) {
 		searchValue := strings.TrimSpace(c.Query("search"))
 
 		if searchValue == "" {
-			// Do the quick path
+			// Take the quick path
 
 			response := make([]*Email, len(emails))
 
