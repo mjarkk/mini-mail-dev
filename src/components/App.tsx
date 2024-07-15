@@ -1,6 +1,5 @@
 import {
 	Match,
-	Show,
 	Switch,
 	createContext,
 	createEffect,
