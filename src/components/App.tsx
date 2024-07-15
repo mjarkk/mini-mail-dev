@@ -165,9 +165,7 @@ function LeftOverviewRightEmail({ emails }: LeftOverviewRightEmailProps) {
 			>
 				<Overview emails={emails} />
 			</div>
-			<div h-screen overflow-y-auto self-stretch flex-1>
-				<Show />
-			</div>
+			<Show />
 		</div>
 	)
 }

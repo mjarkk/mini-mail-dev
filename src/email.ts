@@ -25,6 +25,7 @@ export interface EmailBase {
 }
 
 export interface EmailRemainder {
+	raw: string
 	header: Record<string, Array<string>>
 
 	replyTo: Array<Address>

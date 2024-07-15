@@ -164,19 +164,30 @@ func StartWebserver(dist embed.FS, opts StartWebserverOptions) {
 	}))
 
 	apiGroup.Get("/emails", func(c *fiber.Ctx) error {
-		searchValue := c.Query("search")
+		searchValue := strings.TrimSpace(c.Query("search"))
 
-		emailsCopy := []*Email{}
+		if searchValue == "" {
+			// Do the quick path
 
-		for idx := 0; idx < len(emails); idx++ {
+			response := make([]*Email, len(emails))
+
+			for idx := len(emails) - 1; idx >= 0; idx-- {
+				response[len(emails)-idx-1] = &emails[idx]
+			}
+
+			return c.JSON(response)
+		}
+
+		response := []*Email{}
+		for idx := len(emails) - 1; idx >= 0; idx-- {
 			if len(searchValue) > 0 && !filterEmail(searchValue, emails[idx]) {
 				continue
 			}
 
-			emailsCopy = append(emailsCopy, &emails[idx])
+			response = append(response, &emails[idx])
 		}
 
-		return c.JSON(emailsCopy)
+		return c.JSON(response)
 	})
 
 	apiGroup.Get("/emails/:id/remainder", func(c *fiber.Ctx) error {

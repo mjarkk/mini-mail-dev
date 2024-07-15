@@ -1,4 +1,4 @@
-import { createEffect, createSignal, useContext } from "solid-js"
+import { createEffect, createSignal, JSX, useContext } from "solid-js"
 import type { EmailRemainder } from "../../email"
 import { SelectedEmailContext } from "../App"
 import { fetch } from "../../services/fetch"
@@ -27,10 +27,31 @@ export function Show({}: ShowProps) {
 		if (e) getFullMail(e.id)
 	})
 
+	const hasAttachments = () => (emailRemainder()?.attachments?.length ?? 0) > 0
+
+	const bodyStyle = (): JSX.CSSProperties => ({
+		"grid-template-columns": "1fr",
+		"grid-template-rows": hasAttachments()
+			? "auto auto 60px 1fr"
+			: "auto 60px 1fr",
+	})
+
 	return (
-		<div flex flex-col overflow-y-hidden h-screen>
+		<div
+			flex-1
+			self-stretch
+			overflow-y-hidden
+			h-screen
+			max-h-screen
+			grid
+			style={bodyStyle()}
+		>
 			<Header email={mustEmail} emailRemainder={emailRemainder} />
-			<Attachments email={mustEmail} emailRemainder={emailRemainder} />
+			<Attachments
+				email={mustEmail}
+				emailRemainder={emailRemainder}
+				hasAttachments={hasAttachments}
+			/>
 			<Body email={mustEmail} emailRemainder={emailRemainder} />
 		</div>
 	)

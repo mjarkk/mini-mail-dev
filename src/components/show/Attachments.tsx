@@ -7,12 +7,15 @@ import { AttachmentButton } from "./AttachmentButton"
 export interface AttachmentsProps {
 	email: Accessor<EmailBase>
 	emailRemainder: Accessor<EmailRemainder | undefined>
+	hasAttachments: Accessor<boolean>
 }
 
-export function Attachments({ emailRemainder, email }: AttachmentsProps) {
+export function Attachments({
+	emailRemainder,
+	email,
+	hasAttachments,
+}: AttachmentsProps) {
 	const [showAttachment, setShowAttachment] = createSignal<number>()
-
-	const hasAttachments = () => (emailRemainder()?.attachments?.length ?? 0) > 0
 
 	createEffect(() => {
 		// When the email changes hide the show attachment

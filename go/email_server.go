@@ -1,6 +1,7 @@
 package src
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -90,7 +91,12 @@ func (s *Session) Data(r io.Reader) error {
 		return smtp.ErrAuthRequired
 	}
 
-	emailContents, err := parsemail.Parse(r)
+	emailRawData, err := io.ReadAll(r)
+	if err != nil {
+		return err
+	}
+
+	emailContents, err := parsemail.Parse(bytes.NewBuffer(emailRawData))
 	if err != nil {
 		return err
 	}
@@ -100,6 +106,7 @@ func (s *Session) Data(r io.Reader) error {
 
 	email, err := ConvertEmail(
 		ulid.MustNew(ms, s.Backend.Entropy),
+		emailRawData,
 		emailContents,
 		now,
 		s.From,

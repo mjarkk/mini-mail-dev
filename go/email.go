@@ -75,6 +75,8 @@ func ConvertEmbeddedFile(eb parsemail.EmbeddedFile) (EmbeddedFile, error) {
 }
 
 type EmailRemainder struct {
+	Raw string `json:"raw"`
+
 	Header mail.Header `json:"header"`
 
 	ReplyTo    []*Address `json:"replyTo"`
@@ -120,7 +122,7 @@ type Email struct {
 }
 
 // ConvertEmail converts parsemail.Email to a Email
-func ConvertEmail(ulid ulid.ULID, em parsemail.Email, realDate time.Time, realFrom, realTo string) (Email, error) {
+func ConvertEmail(ulid ulid.ULID, emlRawData []byte, em parsemail.Email, realDate time.Time, realFrom, realTo string) (Email, error) {
 	attachments, err := ConvertAttachmentList(em.Attachments)
 	if err != nil {
 		return Email{}, err
@@ -157,6 +159,7 @@ func ConvertEmail(ulid ulid.ULID, em parsemail.Email, realDate time.Time, realFr
 		BodyHint: bodyHint,
 		BodyType: "text",
 		Remainder: EmailRemainder{
+			Raw:             string(emlRawData),
 			Header:          em.Header,
 			ReplyTo:         ConvertAddressList(em.ReplyTo),
 			Cc:              ConvertAddressList(em.Cc),
