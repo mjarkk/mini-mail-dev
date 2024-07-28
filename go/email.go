@@ -144,6 +144,10 @@ func ConvertEmail(ulid ulid.ULID, emlRawData []byte, em parsemail.Email, realDat
 		bodyHint = bodyHint[:100] + "..."
 	}
 
+	if em.Header.Get("Content-Transfer-Encoding") == "quoted-printable" {
+		em.HTMLBody = sanitize.ConvertQoutedPrintable(em.HTMLBody)
+	}
+
 	htmlBody, err := sanitize.Parse(em.HTMLBody)
 	if err != nil {
 		return Email{}, err
