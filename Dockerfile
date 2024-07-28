@@ -9,7 +9,7 @@ WORKDIR /app
 
 RUN npm i && npm run build
 
-FROM --platform=${BUILDPLATFORM:-linux/amd64} golang:1.21
+FROM --platform=${BUILDPLATFORM:-linux/amd64} golang:1.22
 
 WORKDIR /usr/src/app
 
