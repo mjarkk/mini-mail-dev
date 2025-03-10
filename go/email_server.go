@@ -2,10 +2,18 @@ package src
 
 import (
 	"bytes"
+	cryptoRand "crypto/rand"
+	"crypto/rsa"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"fmt"
 	"io"
 	"log"
+	"math/big"
 	"math/rand"
+	"net"
+	"os"
 	"sync"
 	"time"
 
@@ -148,6 +156,7 @@ type StartEmailServerOptions struct {
 	Username  string
 	Password  string
 	MaxEmails uint16
+	Tls       bool
 }
 
 // StartEmailServer starts the email server
@@ -179,9 +188,72 @@ func StartEmailServer(opts StartEmailServerOptions) {
 	server.AllowInsecureAuth = true
 	server.AuthDisabled = backend.Credentials == nil
 
+	if opts.Tls {
+		tlsConfig, err := generateTLSConfig()
+		if err != nil {
+			fmt.Println("WARN: failed to generate self signed tls certificate for email server, error:", err)
+			os.Exit(1)
+		} else {
+			server.TLSConfig = tlsConfig
+		}
+	}
+
 	fmt.Println("Running SMTP server at", server.Addr, "with a emails dequeue length of", opts.MaxEmails)
 	err := server.ListenAndServe()
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func generateTLSConfig() (*tls.Config, error) {
+	// Generate a private key
+	privateKey, err := rsa.GenerateKey(cryptoRand.Reader, 2048)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set up certificate template
+	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
+	serialNumber, err := cryptoRand.Int(cryptoRand.Reader, serialNumberLimit)
+	if err != nil {
+		return nil, err
+	}
+
+	template := x509.Certificate{
+		SerialNumber: serialNumber,
+		Subject: pkix.Name{
+			Organization: []string{"Self-Signed Cert"},
+			CommonName:   "localhost",
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().AddDate(1, 0, 0),
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+		IPAddresses:           []net.IP{net.ParseIP("127.0.0.1")},
+		DNSNames:              []string{"localhost"},
+	}
+
+	// Create the certificate
+	derBytes, err := x509.CreateCertificate(
+		cryptoRand.Reader,
+		&template,
+		&template,
+		&privateKey.PublicKey,
+		privateKey,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create the TLS certificate
+	cert := tls.Certificate{
+		Certificate: [][]byte{derBytes},
+		PrivateKey:  privateKey,
+	}
+
+	// Return the TLS config
+	return &tls.Config{
+		Certificates: []tls.Certificate{cert},
+	}, nil
 }

@@ -65,6 +65,7 @@ Options:
 | SMTP domain            | `--smtp-domain`        | `SMTP_DOMAIN`        | `localhost`    |
 | SMTP incoming password | `--smtp-incoming-pass` | `SMTP_INCOMING_PASS` |                |
 | SMTP incoming username | `--smtp-incoming-user` | `SMTP_INCOMING_USER` |                |
+| SMTP TLS               | `--smtp-tls`           | `SMTP_TLS`           | `false`        |
 
 _Note that authentication is only enabled if you provided the relevant envourment variables_
 

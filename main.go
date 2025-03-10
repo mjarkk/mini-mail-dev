@@ -32,6 +32,7 @@ func main() {
 	argSMTPDomain := pflag.String("smtp-domain", defaultSMPTDomain, "SMTP server domain")
 	argSMTPUsername := pflag.String("smtp-incoming-user", "", "SMTP server username"+ifEmptyNotRequired)
 	argSMTPPassword := pflag.String("smtp-incoming-pass", "", "SMTP server password"+ifEmptyNotRequired)
+	argSMTPTLS := pflag.Bool("smtp-tls", false, "Enable TLS for SMTP server")
 	argHTTPUsername := pflag.String("http-user", "", "HTTP server username"+ifEmptyNotRequired)
 	argHTTPPassword := pflag.String("http-pass", "", "HTTP server address"+ifEmptyNotRequired)
 	argDisableWeb := pflag.Bool("disable-web", false, "Disable the web interface")
@@ -43,6 +44,7 @@ func main() {
 	envSMTPDomain := getenv("SMTP_DOMAIN")
 	envSMTPUsername := getenv("SMTP_INCOMING_USER")
 	envSMTPPassword := getenv("SMTP_INCOMING_PASS")
+	envSMTPTLS := strings.ToLower(getenv("SMTP_TLS")) == "true"
 	envHTTPUsername := getenv("HTTP_USER")
 	envHTTPPassword := getenv("HTTP_PASS")
 	envDisableWeb := strings.ToLower(getenv("DISABLE_WEB")) == "true"
@@ -77,6 +79,9 @@ func main() {
 	if !*argDisableWeb && envDisableWeb {
 		*argDisableWeb = envDisableWeb
 	}
+	if *argSMTPTLS == false && envSMTPTLS {
+		*argSMTPTLS = envSMTPTLS
+	}
 
 	if *argDisableWeb {
 		fmt.Println("Not starting webserver as --disable-web is set")
@@ -93,5 +98,6 @@ func main() {
 		Username:  *argSMTPUsername,
 		Password:  *argSMTPPassword,
 		MaxEmails: *argMaxEmails,
+		Tls:       *argSMTPTLS,
 	})
 }
