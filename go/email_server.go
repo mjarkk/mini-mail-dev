@@ -12,7 +12,6 @@ import (
 	"log"
 	"math/big"
 	"math/rand"
-	"net"
 	"os"
 	"sync"
 	"time"
@@ -223,15 +222,13 @@ func generateTLSConfig() (*tls.Config, error) {
 		SerialNumber: serialNumber,
 		Subject: pkix.Name{
 			Organization: []string{"Self-Signed Cert"},
-			CommonName:   "localhost",
+			CommonName:   "*",
 		},
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().AddDate(1, 0, 0),
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
-		IPAddresses:           []net.IP{net.ParseIP("127.0.0.1")},
-		DNSNames:              []string{"localhost"},
 	}
 
 	// Create the certificate
@@ -255,5 +252,12 @@ func generateTLSConfig() (*tls.Config, error) {
 	// Return the TLS config
 	return &tls.Config{
 		Certificates: []tls.Certificate{cert},
+		// This is the key configuration - the server won't verify client hostnames
+		InsecureSkipVerify: true,
+		ClientAuth:         tls.NoClientCert,
+		// Skip hostname verification completely - accept ANY hostname
+		VerifyConnection: func(state tls.ConnectionState) error {
+			return nil // Always approve the connection
+		},
 	}, nil
 }
