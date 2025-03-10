@@ -3,7 +3,7 @@ name: publish
 on:
   push:
     tags:
-      - '*'
+      - "*"
 
 jobs:
   publish:
@@ -17,7 +17,7 @@ jobs:
           fetch-depth: 1
 
       - name: Setup mirror
-        uses: self-actuated/hub-mirror@master
+        uses: self-actuated/hub-mirror@v3
       - name: Get TAG
         id: get_tag
         run: echo TAG=${GITHUB_REF#refs/tags/} >> $GITHUB_ENV
