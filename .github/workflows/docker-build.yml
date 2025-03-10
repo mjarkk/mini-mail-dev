@@ -12,12 +12,12 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@master
         with:
           fetch-depth: 1
 
       - name: Setup mirror
-        uses: self-actuated/hub-mirror@v3
+        uses: self-actuated/hub-mirror@master
       - name: Get TAG
         id: get_tag
         run: echo TAG=${GITHUB_REF#refs/tags/} >> $GITHUB_ENV
