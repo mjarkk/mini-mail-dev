@@ -1,21 +1,22 @@
 package src
 
 import (
+	"crypto/sha256"
 	"embed"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"log"
-	"net/http"
 	"strings"
 	"sync"
 
-	"github.com/gofiber/contrib/websocket"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/basicauth"
-	"github.com/gofiber/fiber/v2/middleware/compress"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/filesystem"
-	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/contrib/v3/websocket"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/basicauth"
+	"github.com/gofiber/fiber/v3/middleware/compress"
+	"github.com/gofiber/fiber/v3/middleware/cors"
+	"github.com/gofiber/fiber/v3/middleware/logger"
+	"github.com/gofiber/fiber/v3/middleware/static"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -118,14 +119,14 @@ type StartWebserverOptions struct {
 
 // StartWebserver starts the webserver
 func StartWebserver(dist embed.FS, opts StartWebserverOptions) {
-	app := fiber.New(fiber.Config{
-		DisableStartupMessage: true,
-	})
+	app := fiber.New()
 
 	if opts.BasicAuthUsername != "" || opts.BasicAuthPassword != "" {
+		// basicauth only accepts hashed passwords.
+		passwordHash := sha256.Sum256([]byte(opts.BasicAuthPassword))
 		app.Use(basicauth.New(basicauth.Config{
 			Users: map[string]string{
-				opts.BasicAuthUsername: opts.BasicAuthPassword,
+				opts.BasicAuthUsername: "{SHA256}" + base64.StdEncoding.EncodeToString(passwordHash[:]),
 			},
 		}))
 	}
@@ -136,7 +137,7 @@ func StartWebserver(dist embed.FS, opts StartWebserverOptions) {
 
 	apiGroup := app.Group("/api")
 
-	apiGroup.Use(func(c *fiber.Ctx) error {
+	apiGroup.Use(func(c fiber.Ctx) error {
 		err := c.Next()
 		if err == nil {
 			return nil
@@ -163,7 +164,7 @@ func StartWebserver(dist embed.FS, opts StartWebserverOptions) {
 		}
 	}))
 
-	apiGroup.Get("/emails", func(c *fiber.Ctx) error {
+	apiGroup.Get("/emails", func(c fiber.Ctx) error {
 		searchValue := strings.TrimSpace(c.Query("search"))
 
 		if searchValue == "" {
@@ -190,7 +191,7 @@ func StartWebserver(dist embed.FS, opts StartWebserverOptions) {
 		return c.JSON(response)
 	})
 
-	apiGroup.Get("/emails/:id/remainder", func(c *fiber.Ctx) error {
+	apiGroup.Get("/emails/:id/remainder", func(c fiber.Ctx) error {
 		email, err := findEmail(c.Params("id"))
 		if err != nil {
 			return err
@@ -198,7 +199,7 @@ func StartWebserver(dist embed.FS, opts StartWebserverOptions) {
 		return c.JSON(email.Remainder)
 	})
 
-	apiGroup.Get("/emails/:id/page", func(c *fiber.Ctx) error {
+	apiGroup.Get("/emails/:id/page", func(c fiber.Ctx) error {
 		email, err := findEmail(c.Params("id"))
 		if err != nil {
 			return err
@@ -209,7 +210,7 @@ func StartWebserver(dist embed.FS, opts StartWebserverOptions) {
 		return nil
 	})
 
-	apiGroup.Delete("/emails/:id", func(c *fiber.Ctx) error {
+	apiGroup.Delete("/emails/:id", func(c fiber.Ctx) error {
 		id, err := ulid.Parse(c.Params("id"))
 		if err != nil {
 			return err
@@ -228,7 +229,7 @@ func StartWebserver(dist embed.FS, opts StartWebserverOptions) {
 		return c.SendStatus(fiber.StatusNoContent)
 	})
 
-	apiGroup.Get("/emails/:id/attachments/:nr", func(c *fiber.Ctx) error {
+	apiGroup.Get("/emails/:id/attachments/:nr", func(c fiber.Ctx) error {
 		email, err := findEmail(c.Params("id"))
 		if err != nil {
 			return err
@@ -236,8 +237,8 @@ func StartWebserver(dist embed.FS, opts StartWebserverOptions) {
 
 		var invalidNr = errors.New("invalid attachment number")
 
-		nr, err := c.ParamsInt("nr")
-		if err != nil || nr < 0 || nr >= len(email.Remainder.Attachments) {
+		nr := fiber.Params(c, "nr", -1)
+		if nr < 0 || nr >= len(email.Remainder.Attachments) {
 			return invalidNr
 		}
 
@@ -247,7 +248,7 @@ func StartWebserver(dist embed.FS, opts StartWebserverOptions) {
 		return c.Send(attachment.Data)
 	})
 
-	apiGroup.Get("/emails/:id/embeddedFiles/:nr", func(c *fiber.Ctx) error {
+	apiGroup.Get("/emails/:id/embeddedFiles/:nr", func(c fiber.Ctx) error {
 		email, err := findEmail(c.Params("id"))
 		if err != nil {
 			return err
@@ -255,8 +256,8 @@ func StartWebserver(dist embed.FS, opts StartWebserverOptions) {
 
 		var invalidNr = errors.New("invalid embedded file number")
 
-		nr, err := c.ParamsInt("nr")
-		if err != nil || nr < 0 || nr >= len(email.Remainder.EmbeddedFiles) {
+		nr := fiber.Params(c, "nr", -1)
+		if nr < 0 || nr >= len(email.Remainder.EmbeddedFiles) {
 			return invalidNr
 		}
 
@@ -265,12 +266,8 @@ func StartWebserver(dist embed.FS, opts StartWebserverOptions) {
 		return c.Send(attachment.Data)
 	})
 
-	app.Use(filesystem.New(filesystem.Config{
-		PathPrefix: "dist",
-		Index:      "index.html",
-		Root:       http.FS(dist),
-	}))
+	app.Get("/*", static.New("dist", static.Config{FS: dist}))
 
 	fmt.Println("Running Web server at", opts.Addr)
-	log.Fatal(app.Listen(opts.Addr))
+	log.Fatal(app.Listen(opts.Addr, fiber.ListenConfig{DisableStartupMessage: true}))
 }
