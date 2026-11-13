@@ -1,6 +1,4 @@
 ARG BUILDPLATFORM
-ARG TARGETOS
-ARG TARGETARCH
 
 FROM --platform=linux/amd64 node:26-slim AS frontend
 
@@ -10,6 +8,10 @@ WORKDIR /app
 RUN npm i && npm run build
 
 FROM --platform=${BUILDPLATFORM:-linux/amd64} golang:1.27
+
+ARG TARGETOS
+ARG TARGETARCH
+ARG TARGETVARIANT
 
 WORKDIR /usr/src/app
 
@@ -21,7 +23,7 @@ COPY go go
 COPY main.go .
 COPY --from=frontend /app/dist dist
 
-RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} GOARM=${TARGETVARIANT#v} \
     go build -o /usr/bin/mini-mail-dev && \
     rm -rf go main.go go.mod go.sum dist
 

@@ -16,8 +16,6 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Setup mirror
-        uses: self-actuated/hub-mirror@v5
       - name: Get TAG
         id: get_tag
         run: echo TAG=${GITHUB_REF#refs/tags/} >> $GITHUB_ENV
