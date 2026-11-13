@@ -6,10 +6,12 @@ import { isImage, isPdf } from "./AttachmentButton"
 
 export interface AttachmentIconProps {
 	contentType: () => string
+	/** Width and height in px. */
+	size?: number
 }
 
-export function AttachmentIcon({ contentType }: AttachmentIconProps) {
-	const iconStyle = { height: "30px", width: "30px" }
+export function AttachmentIcon({ contentType, size = 30 }: AttachmentIconProps) {
+	const iconStyle = { height: `${size}px`, width: `${size}px` }
 
 	return (
 		<Switch fallback={<IconFilePresent style={iconStyle} />}>

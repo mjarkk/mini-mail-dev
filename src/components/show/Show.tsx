@@ -1,12 +1,16 @@
-import { createEffect, createSignal, JSX, useContext } from "solid-js"
-import type { EmailRemainder } from "../../email"
+import { Accessor, createEffect, createSignal, useContext } from "solid-js"
+import type { EmailPosition, EmailRemainder } from "../../email"
 import { SelectedEmailContext } from "../App"
 import { fetch } from "../../services/fetch"
 import { Header } from "./Header"
 import { Attachments } from "./Attachments"
 import { Body } from "./Body"
 
-export function ShowEmail() {
+export interface ShowEmailProps {
+	position: Accessor<EmailPosition | undefined>
+}
+
+export function ShowEmail({ position }: ShowEmailProps) {
 	const [email] = useContext(SelectedEmailContext)
 	const mustEmail = () => email()!
 
@@ -25,32 +29,30 @@ export function ShowEmail() {
 		if (e) getFullMail(e.id)
 	})
 
-	const hasAttachments = () => (emailRemainder()?.attachments?.length ?? 0) > 0
-
-	const bodyStyle = (): JSX.CSSProperties => ({
-		"grid-template-columns": "1fr",
-		"grid-template-rows": hasAttachments()
-			? "auto auto 60px 1fr"
-			: "auto 60px 1fr",
-	})
-
 	return (
-		<div
+		<main
+			class="widget"
 			flex-1
-			self-stretch
-			overflow-y-hidden
-			h-screen
-			max-h-screen
-			grid
-			style={bodyStyle()}
+			min-w-0
+			flex
+			flex-col
+			gap="[14px]"
+			px-4
+			px="sm:[22px]"
+			pt-4
+			sm:pt-5
+			pb-4
+			pb="sm:[22px]"
+			overflow-y-auto
 		>
-			<Header email={mustEmail} emailRemainder={emailRemainder} />
-			<Attachments
+			<Header
 				email={mustEmail}
 				emailRemainder={emailRemainder}
-				hasAttachments={hasAttachments}
+				position={position}
 			/>
-			<Body email={mustEmail} emailRemainder={emailRemainder} />
-		</div>
+			<Body email={mustEmail} emailRemainder={emailRemainder}>
+				<Attachments email={mustEmail} emailRemainder={emailRemainder} />
+			</Body>
+		</main>
 	)
 }

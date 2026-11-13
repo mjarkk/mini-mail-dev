@@ -10,11 +10,15 @@ export function EmailAddr({ address }: EmailAddrProps) {
 	const addr = () => address().address
 
 	return (
-		<span font-bold text-zinc-200>
-			{name()}
+		<Show when={name()} fallback={<span block truncate text-fg2>{addr()}</span>}>
+			<span block truncate font-medium>
+				{name()}
+			</span>
 			<Show when={addr()}>
-				<span font-normal text-zinc-500>{` <${addr()}>`}</span>
+				<span block truncate text-xs text-muted>
+					{addr()}
+				</span>
 			</Show>
-		</span>
+		</Show>
 	)
 }

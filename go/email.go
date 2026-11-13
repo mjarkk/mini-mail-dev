@@ -1,14 +1,13 @@
 package src
 
 import (
-	"io"
 	"net/mail"
+	"slices"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/DusanKasan/parsemail"
-	"github.com/mjarkk/mini-mail-dev/go/sanitize"
+	"github.com/jhillyerd/enmime/v2"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -18,25 +17,6 @@ type Address struct {
 	Address string `json:"address"`
 }
 
-// MightConvertAddress converts *mail.Address to a *Address
-func MightConvertAddress(ad *mail.Address) *Address {
-	if ad == nil {
-		return nil
-	}
-	return &Address{
-		Name:    ad.Name,
-		Address: ad.Address,
-	}
-}
-
-// ConvertAddress converts mail.Address to a Address
-func ConvertAddress(ad mail.Address) Address {
-	return Address{
-		Name:    ad.Name,
-		Address: ad.Address,
-	}
-}
-
 // Attachment with json attributes
 type Attachment struct {
 	Filename    string `json:"filename"`
@@ -44,14 +24,13 @@ type Attachment struct {
 	Data        []byte `json:"-"`
 }
 
-// ConvertAttachment converts parsemail.Attachment to a Attachment
-func ConvertAttachment(at parsemail.Attachment) (Attachment, error) {
-	data, err := io.ReadAll(at.Data)
+// ConvertAttachment converts a decoded enmime.Part to a Attachment
+func ConvertAttachment(part *enmime.Part) Attachment {
 	return Attachment{
-		Filename:    at.Filename,
-		ContentType: at.ContentType,
-		Data:        data,
-	}, err
+		Filename:    part.FileName,
+		ContentType: part.ContentType,
+		Data:        part.Content,
+	}
 }
 
 // EmbeddedFile with json attributes
@@ -63,15 +42,14 @@ type EmbeddedFile struct {
 	Data        []byte `json:"-"`
 }
 
-// ConvertEmbeddedFile converts parsemail.EmbeddedFile to a EmbeddedFile
-func ConvertEmbeddedFile(eb parsemail.EmbeddedFile) (EmbeddedFile, error) {
-	data, err := io.ReadAll(eb.Data)
+// ConvertEmbeddedFile converts a decoded enmime.Part to a EmbeddedFile
+func ConvertEmbeddedFile(part *enmime.Part) EmbeddedFile {
 	return EmbeddedFile{
 		M:           &sync.Mutex{},
-		CID:         eb.CID,
-		ContentType: eb.ContentType,
-		Data:        data,
-	}, err
+		CID:         part.ContentID,
+		ContentType: part.ContentType,
+		Data:        part.Content,
+	}
 }
 
 type EmailRemainder struct {
@@ -97,6 +75,7 @@ type EmailRemainder struct {
 
 	ContentType string `json:"contentType"`
 
+	// HTMLBody is the HTML as received; render it through sanitize.Parse.
 	HTMLBody string `json:"htmlBody"`
 	TextBody string `json:"textBody"`
 
@@ -112,6 +91,7 @@ type Email struct {
 	Subject  string    `json:"subject"`
 	BodyType string    `json:"bodyType"` // "html" or "text"
 	BodyHint string    `json:"bodyHint"`
+	Read     bool      `json:"read"`
 
 	// Recived form the client
 	Sender *Address   `json:"sender"`
@@ -121,73 +101,53 @@ type Email struct {
 	Remainder EmailRemainder `json:"-"`
 }
 
-// ConvertEmail converts parsemail.Email to a Email
-func ConvertEmail(ulid ulid.ULID, emlRawData []byte, em parsemail.Email, realDate time.Time, realFrom, realTo string) (Email, error) {
-	attachments, err := ConvertAttachmentList(em.Attachments)
-	if err != nil {
-		return Email{}, err
+// ConvertEmail converts a parsed enmime.Envelope to a Email
+func ConvertEmail(ulid ulid.ULID, emlRawData []byte, env *enmime.Envelope, realDate time.Time, realFrom, realTo string) Email {
+	attachments, embeddedFiles := splitParts(env)
+
+	bodyHint := strings.Join(strings.Fields(env.Text), " ")
+	if hint := []rune(bodyHint); len(hint) > 100 {
+		bodyHint = string(hint[:100]) + "..."
 	}
 
-	embeddedFiles, err := ConvertEmbeddedFileList(em.EmbeddedFiles)
-	if err != nil {
-		return Email{}, err
-	}
-
-	bodyHint := strings.NewReplacer(
-		"\n", " ",
-		"\r", " ",
-		"\t", " ",
-		"   ", " ",
-		"  ", " ",
-	).Replace(em.TextBody)
-	if len(bodyHint) > 100 {
-		bodyHint = bodyHint[:100] + "..."
-	}
-
-	if em.Header.Get("Content-Transfer-Encoding") == "quoted-printable" {
-		em.HTMLBody = sanitize.ConvertQoutedPrintable(em.HTMLBody)
-	}
-
-	htmlBody, err := sanitize.Parse(em.HTMLBody)
-	if err != nil {
-		return Email{}, err
-	}
+	date, _ := env.Date()
+	resentDate, _ := mail.ParseDate(env.GetHeader("Resent-Date"))
 
 	resp := Email{
 		ID:       ulid,
 		RealDate: realDate,
-		Subject:  em.Subject,
-		Sender:   MightConvertAddress(em.Sender),
-		From:     ConvertAddressList(em.From),
-		To:       ConvertAddressList(em.To),
+		Subject:  env.GetHeader("Subject"),
+		Sender:   firstAddress(env, "Sender"),
+		From:     addressList(env, "From"),
+		To:       addressList(env, "To"),
 		BodyHint: bodyHint,
 		BodyType: "text",
 		Remainder: EmailRemainder{
 			Raw:             string(emlRawData),
-			Header:          em.Header,
-			ReplyTo:         ConvertAddressList(em.ReplyTo),
-			Cc:              ConvertAddressList(em.Cc),
-			Bcc:             ConvertAddressList(em.Bcc),
-			Date:            em.Date,
-			MessageID:       em.MessageID,
-			InReplyTo:       em.InReplyTo,
-			References:      em.References,
-			ResentFrom:      ConvertAddressList(em.ResentFrom),
-			ResentSender:    MightConvertAddress(em.ResentSender),
-			ResentTo:        ConvertAddressList(em.ResentTo),
-			ResentDate:      em.ResentDate,
-			ResentCc:        ConvertAddressList(em.ResentCc),
-			ResentBcc:       ConvertAddressList(em.ResentBcc),
-			ResentMessageID: em.ResentMessageID,
-			ContentType:     em.ContentType,
-			HTMLBody:        htmlBody,
-			TextBody:        em.TextBody,
+			Header:          mail.Header(env.Root.Header),
+			ReplyTo:         addressList(env, "Reply-To"),
+			Cc:              addressList(env, "Cc"),
+			Bcc:             addressList(env, "Bcc"),
+			Date:            date,
+			MessageID:       messageID(env.GetHeader("Message-ID")),
+			InReplyTo:       messageIDs(env.GetHeader("In-Reply-To")),
+			References:      messageIDs(env.GetHeader("References")),
+			ResentFrom:      addressList(env, "Resent-From"),
+			ResentSender:    firstAddress(env, "Resent-Sender"),
+			ResentTo:        addressList(env, "Resent-To"),
+			ResentDate:      resentDate,
+			ResentCc:        addressList(env, "Resent-Cc"),
+			ResentBcc:       addressList(env, "Resent-Bcc"),
+			ResentMessageID: messageID(env.GetHeader("Resent-Message-ID")),
+			ContentType:     env.GetHeader("Content-Type"),
+			HTMLBody:        env.HTML,
+			TextBody:        env.Text,
 			Attachments:     attachments,
 			EmbeddedFiles:   embeddedFiles,
 		},
 	}
 
-	if em.HTMLBody != "" {
+	if env.HTML != "" {
 		resp.BodyType = "html"
 	}
 
@@ -199,7 +159,7 @@ func ConvertEmail(ulid ulid.ULID, emlRawData []byte, em parsemail.Email, realDat
 		resp.To = []*Address{{Address: realTo}}
 	}
 
-	return resp, nil
+	return resp
 }
 
 // ConvertAddressList converts a list of mail.Address to a list of Address
@@ -218,36 +178,45 @@ func ConvertAddressList(adList []*mail.Address) []*Address {
 	return result
 }
 
-// ConvertAttachmentList converts a list of parsemail.Attachment to a list of Attachment
-func ConvertAttachmentList(atList []parsemail.Attachment) ([]Attachment, error) {
-	if atList == nil {
-		return nil, nil
+func splitParts(env *enmime.Envelope) (attachments []Attachment, embeddedFiles []EmbeddedFile) {
+	for _, part := range env.Attachments {
+		attachments = append(attachments, ConvertAttachment(part))
 	}
 
-	var err error
-	results := make([]Attachment, len(atList))
-	for idx, at := range atList {
-		results[idx], err = ConvertAttachment(at)
-		if err != nil {
-			return nil, err
+	for _, part := range slices.Concat(env.Inlines, env.OtherParts) {
+		if part.ContentID != "" {
+			embeddedFiles = append(embeddedFiles, ConvertEmbeddedFile(part))
+		} else if part.FileName != "" {
+			// Without a Content-ID the HTML can't reference it, so it would otherwise be invisible.
+			attachments = append(attachments, ConvertAttachment(part))
 		}
 	}
-	return results, nil
+
+	return attachments, embeddedFiles
 }
 
-// ConvertEmbeddedFileList converts a list of parsemail.EmbeddedFile to a list of EmbeddedFile
-func ConvertEmbeddedFileList(ebList []parsemail.EmbeddedFile) ([]EmbeddedFile, error) {
-	if ebList == nil {
-		return nil, nil
-	}
+// A missing or malformed address header leaves the field empty instead of rejecting the email.
+func addressList(env *enmime.Envelope, key string) []*Address {
+	list, _ := env.AddressList(key)
+	return ConvertAddressList(list)
+}
 
-	var err error
-	results := make([]EmbeddedFile, len(ebList))
-	for idx, eb := range ebList {
-		results[idx], err = ConvertEmbeddedFile(eb)
-		if err != nil {
-			return nil, err
-		}
+func firstAddress(env *enmime.Envelope, key string) *Address {
+	list := addressList(env, key)
+	if len(list) == 0 {
+		return nil
 	}
-	return results, nil
+	return list[0]
+}
+
+func messageID(value string) string {
+	return strings.Trim(value, "<> ")
+}
+
+func messageIDs(value string) []string {
+	var ids []string
+	for _, id := range strings.Fields(value) {
+		ids = append(ids, messageID(id))
+	}
+	return ids
 }

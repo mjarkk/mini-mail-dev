@@ -1,12 +1,4 @@
-import {
-	Accessor,
-	createSignal,
-	For,
-	onCleanup,
-	onMount,
-	Show,
-	useContext,
-} from "solid-js"
+import { Accessor, For, onCleanup, onMount, Show, useContext } from "solid-js"
 import { Header } from "./Header"
 import { SearchContext, SelectedEmailContext } from "../App"
 import { EmailBase } from "../../email"
@@ -15,25 +7,12 @@ import { EmailRow } from "./EmailRow"
 export interface OverviewProps {
 	emails: Accessor<Array<EmailBase> | undefined>
 	loading?: Accessor<boolean>
+	connected: Accessor<boolean>
 }
 
-export function Overview({ emails, loading }: OverviewProps) {
+export function Overview({ emails, loading, connected }: OverviewProps) {
 	const [selectedEmail, selectedEmailActions] = useContext(SelectedEmailContext)
 	const [search, searchActions] = useContext(SearchContext)
-	const [display, setDisplay] = createSignal<"lg" | "md" | "sm">()
-	const getDisplayValue = (w: number) => {
-		if (!w) return undefined
-		else if (w > 900) return "lg"
-		else if (w > 600) return "md"
-		else return "sm"
-	}
-
-	let ref: HTMLDivElement | null = null
-
-	const onResize = () => {
-		const width = ref?.getBoundingClientRect().width
-		if (width) setDisplay(getDisplayValue(width))
-	}
 
 	const onKeydown = ({ target, key }: KeyboardEvent) => {
 		const currentSelectedEmail = selectedEmail()
@@ -71,53 +50,56 @@ export function Overview({ emails, loading }: OverviewProps) {
 	}
 
 	onMount(() => {
-		window.addEventListener("resize", onResize)
 		window.addEventListener("keydown", onKeydown)
-		onResize()
 	})
 
 	onCleanup(() => {
-		window.removeEventListener("resize", onResize)
 		window.removeEventListener("keydown", onKeydown)
 	})
 
 	return (
-		<div ref={(el) => (ref = el)}>
-			<Header search={search} setSearch={searchActions.set} />
+		<div flex flex-col gap="[10px]" flex-1 min-w-0 min-h-0>
+			<Header
+				search={search}
+				setSearch={searchActions.set}
+				count={() => emails()?.length ?? 0}
+				connected={connected}
+			/>
 
-			<Show
-				when={!loading || !loading()}
-				fallback={
-					<p p-3 text-zinc-400>
-						Loading...
-					</p>
-				}
-			>
-				<For
-					each={emails()}
+			<div class="widget" flex-1 min-h-0 overflow-y-auto p="[6px]">
+				<Show
+					when={!loading || !loading()}
 					fallback={
-						<p p-3 text-zinc-400>
-							No emails
+						<p class="mono-label" m-0 p-4>
+							Loading
 						</p>
 					}
 				>
-					{(email) => {
-						const selected = () => email.id == selectedEmail()?.id
-						return (
-							<EmailRow
-								display={() => display()}
-								selected={selected}
-								email={email}
-								onClick={() =>
-									selected()
-										? selectedEmailActions.deSelect()
-										: selectedEmailActions.select(email)
-								}
-							/>
-						)
-					}}
-				</For>
-			</Show>
+					<For
+						each={emails()}
+						fallback={
+							<p class="mono-label" m-0 p-4>
+								{search() ? "No matches" : "No emails"}
+							</p>
+						}
+					>
+						{(email) => {
+							const selected = () => email.id == selectedEmail()?.id
+							return (
+								<EmailRow
+									selected={selected}
+									email={email}
+									onClick={() =>
+										selected()
+											? selectedEmailActions.deSelect()
+											: selectedEmailActions.select(email)
+									}
+								/>
+							)
+						}}
+					</For>
+				</Show>
+			</div>
 		</div>
 	)
 }

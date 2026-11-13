@@ -17,6 +17,7 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/cors"
 	"github.com/gofiber/fiber/v3/middleware/logger"
 	"github.com/gofiber/fiber/v3/middleware/static"
+	"github.com/mjarkk/mini-mail-dev/go/sanitize"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -101,6 +102,9 @@ func findEmail(id string) (Email, error) {
 		return Email{}, err
 	}
 
+	emailsLock.Lock()
+	defer emailsLock.Unlock()
+
 	for _, email := range emails {
 		if email.ID == parsedID {
 			return email, nil
@@ -167,6 +171,10 @@ func StartWebserver(dist embed.FS, opts StartWebserverOptions) {
 	apiGroup.Get("/emails", func(c fiber.Ctx) error {
 		searchValue := strings.TrimSpace(c.Query("search"))
 
+		// Held through c.JSON: the response points into emails.
+		emailsLock.Lock()
+		defer emailsLock.Unlock()
+
 		if searchValue == "" {
 			// Take the quick path
 
@@ -199,15 +207,53 @@ func StartWebserver(dist embed.FS, opts StartWebserverOptions) {
 		return c.JSON(email.Remainder)
 	})
 
+	apiGroup.Get("/email-clients", func(c fiber.Ctx) error {
+		return c.JSON(sanitize.Clients)
+	})
+
 	apiGroup.Get("/emails/:id/page", func(c fiber.Ctx) error {
 		email, err := findEmail(c.Params("id"))
 		if err != nil {
 			return err
 		}
 
-		c.Response().SetBodyRaw([]byte(email.Remainder.HTMLBody))
-		c.Response().Header.SetContentType(fiber.MIMETextHTML)
+		client := sanitize.Clients[0]
+		if id := c.Query("client"); id != "" {
+			client = sanitize.ClientByID(id)
+			if client == nil {
+				return fmt.Errorf("unknown email client %q", id)
+			}
+		}
+
+		page, err := sanitize.Parse(email.Remainder.HTMLBody, client)
+		if err != nil {
+			return err
+		}
+
+		c.Response().SetBodyRaw([]byte(page))
+		// The body was converted to UTF-8 while parsing; this header overrides any <meta charset> left in the HTML.
+		c.Response().Header.SetContentType(fiber.MIMETextHTMLCharsetUTF8)
+		c.Response().Header.Set("Content-Security-Policy", client.ContentSecurityPolicy())
 		return nil
+	})
+
+	apiGroup.Post("/emails/:id/read", func(c fiber.Ctx) error {
+		id, err := ulid.Parse(c.Params("id"))
+		if err != nil {
+			return err
+		}
+
+		emailsLock.Lock()
+		defer emailsLock.Unlock()
+
+		for i := range emails {
+			if emails[i].ID == id {
+				emails[i].Read = true
+				return c.SendStatus(fiber.StatusNoContent)
+			}
+		}
+
+		return errors.New("email not found")
 	})
 
 	apiGroup.Delete("/emails/:id", func(c fiber.Ctx) error {

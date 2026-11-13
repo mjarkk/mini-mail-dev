@@ -8,10 +8,18 @@
 		<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
 		<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
 		<link rel="manifest" href="/site.webmanifest">
+		<meta name="color-scheme" content="light dark" />
+		<!-- Painted before the app CSS loads; keep in sync with --ground and --fg in src/global.css -->
 		<style>
 			body {
-				background-color: #09090b;
-				color: white;
+				background-color: #f2f2f2;
+				color: #000000;
+			}
+			@media (prefers-color-scheme: dark) {
+				body {
+					background-color: #000000;
+					color: #ffffff;
+				}
 			}
 		</style>
 	</head>

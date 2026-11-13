@@ -7,15 +7,11 @@ import { AttachmentButton } from "./AttachmentButton"
 export interface AttachmentsProps {
 	email: Accessor<EmailBase>
 	emailRemainder: Accessor<EmailRemainder | undefined>
-	hasAttachments: Accessor<boolean>
 }
 
-export function Attachments({
-	emailRemainder,
-	email,
-	hasAttachments,
-}: AttachmentsProps) {
+export function Attachments({ emailRemainder, email }: AttachmentsProps) {
 	const [showAttachment, setShowAttachment] = createSignal<number>()
+	const attachments = () => emailRemainder()?.attachments ?? []
 
 	createEffect(() => {
 		// When the email changes hide the show attachment
@@ -25,24 +21,19 @@ export function Attachments({
 
 	return (
 		<>
-			<Show when={hasAttachments()}>
-				<div border-0 border-b border-b-solid border-zinc-800 p-4>
-					<p m-0 text-zinc-500>
-						Attachments:
-					</p>
-					<div flex flex-wrap gap-2 mt-1>
-						<For each={emailRemainder()!.attachments}>
-							{(attachment, index) => (
-								<AttachmentButton
-									attachment={() => attachment}
-									onclick={() => setShowAttachment(index)}
-								/>
-							)}
-						</For>
-					</div>
+			<Show when={attachments().length > 0}>
+				<div flex flex-wrap gap-2 min-w-0>
+					<For each={attachments()}>
+						{(attachment, index) => (
+							<AttachmentButton
+								attachment={() => attachment}
+								onclick={() => setShowAttachment(index)}
+							/>
+						)}
+					</For>
 				</div>
 			</Show>
-			<Show when={showAttachment() !== undefined && hasAttachments()}>
+			<Show when={showAttachment() !== undefined && attachments().length > 0}>
 				<AttachmentModal
 					onClose={() => setShowAttachment(undefined)}
 					attachmentUrl={() =>
@@ -50,7 +41,7 @@ export function Attachments({
 							"/api/emails/" + email().id + "/attachments/" + showAttachment(),
 						)
 					}
-					attachment={() => emailRemainder()!.attachments![showAttachment()!]}
+					attachment={() => attachments()[showAttachment()!]}
 				/>
 			</Show>
 		</>

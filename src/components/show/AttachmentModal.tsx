@@ -57,44 +57,45 @@ export function AttachmentModal({
 				left-0
 				h-screen
 				w-screen
-				p-10
-				bg="black/40"
+				box-border
+				p-4
+				sm:p-10
+				bg="black/60"
 				onClick={modalClick}
 			>
 				<div
+					role="dialog"
+					aria-modal="true"
+					aria-label={attachment().filename}
+					class="widget"
 					mx-auto
-					bg-zinc-900
-					rounded
 					max-w="800px"
 					h-full
-					shadow-xl
 					overflow-hidden
 					flex
 					flex-col
 				>
-					<div p-6 border-0 border-zinc-800 border-b border-b-solid>
-						<p m-0>{attachment().filename}</p>
+					<div px="[22px]" py="[18px]" flex items-center gap-3>
+						<span class="mono-label">Attachment</span>
+						<p m-0 truncate font-mono text-sm text-fg>
+							{attachment().filename}
+						</p>
 					</div>
-					<ShowAttachment
-						attachment={attachment}
-						attachmentUrl={attachmentUrl}
-					/>
-					<div
-						py-4
-						px-6
-						flex
-						justify-end
-						gap-2
-						items-center
-						border-0
-						border-zinc-800
-						border-t
-						border-t-solid
-					>
-						<button onClick={onClose} bg-zinc-700 hover:bg-zinc-600>
+					<div flex-1 min-h-0 mx="[10px]" rounded="[18px]" bg-card2 overflow-hidden flex>
+						<ShowAttachment
+							attachment={attachment}
+							attachmentUrl={attachmentUrl}
+						/>
+					</div>
+					<div px="[22px]" py-4 flex justify-end gap-2 items-center>
+						<button type="button" class="outline-button" onClick={onClose}>
 							Close
 						</button>
-						<button onClick={downloadAttachment} bg-zinc-700 hover:bg-zinc-600>
+						<button
+							type="button"
+							class="outline-button"
+							onClick={downloadAttachment}
+						>
 							Download
 						</button>
 					</div>
@@ -141,7 +142,13 @@ function ShowAttachment({ attachment, attachmentUrl }: ShowAttachmentProps) {
 					/>
 				</Match>
 				<Match when={isPdf(attachment().contentType)}>
-					<iframe h-full src={fileUrl()} />
+					<iframe
+						title={attachment().filename}
+						h-full
+						w-full
+						border-0
+						src={fileUrl()}
+					/>
 				</Match>
 			</Switch>
 		</Show>
@@ -154,7 +161,15 @@ interface ContentNotDisplayableProps {
 
 function ContentNotDisplayable({ contentType }: ContentNotDisplayableProps) {
 	return (
-		<p flex flex-col justify-center items-center h-full text-zinc-400>
+		<p
+			class="mono-label"
+			m-0
+			flex
+			flex-1
+			flex-col
+			justify-center
+			items-center
+		>
 			<AttachmentIcon contentType={contentType} />
 			<span mt-3>Content not displayable</span>
 		</p>

@@ -10,6 +10,7 @@ Features:
 - Simple UI
 - Fast
 - Can handle a vast amounts of emails
+- Preview how Gmail, Apple Mail, Outlook, Outlook.com, Yahoo Mail, Samsung Email and Thunderbird would render an email
 
 ## Run
 
@@ -101,6 +102,16 @@ go run test/test_email.go
 ```
 
 _The javascript files are hot module reloaded only when going to [localhost:**3001**](http://localhost:3001), the go files are not reloaded on changes made_
+
+### Email client previews
+
+The preview simulates each email client by stripping the HTML and CSS that client doesn't support (based on [caniemail.com](https://www.caniemail.com)) and applying its known quirks, such as Gmail clipping long messages and Outlook for Windows evaluating `<!--[if mso]>` comments. It's an approximation: the browser still does the rendering, so engine-specific behaviour like Outlook's Word layout isn't reproduced exactly.
+
+To refresh the caniemail support data:
+
+```bash
+go generate ./go/sanitize
+```
 
 ### Create and run a release build
 

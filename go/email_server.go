@@ -16,10 +16,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/DusanKasan/parsemail"
 	"github.com/emersion/go-sasl"
 	"github.com/emersion/go-smtp"
 	"github.com/fasthttp/websocket"
+	"github.com/jhillyerd/enmime/v2"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -114,7 +114,8 @@ func (s *Session) Data(r io.Reader) error {
 		return err
 	}
 
-	emailContents, err := parsemail.Parse(bytes.NewBuffer(emailRawData))
+	// Without DisableTextConversion, HTML-only emails get a plain text body the sender never wrote.
+	emailContents, err := enmime.NewParser(enmime.DisableTextConversion(true)).ReadEnvelope(bytes.NewReader(emailRawData))
 	if err != nil {
 		return err
 	}
@@ -122,7 +123,7 @@ func (s *Session) Data(r io.Reader) error {
 	now := time.Now()
 	ms := ulid.Timestamp(now)
 
-	email, err := ConvertEmail(
+	email := ConvertEmail(
 		ulid.MustNew(ms, s.Backend.Entropy),
 		emailRawData,
 		emailContents,
@@ -130,9 +131,6 @@ func (s *Session) Data(r io.Reader) error {
 		s.From,
 		s.To,
 	)
-	if err != nil {
-		return err
-	}
 
 	emailsLock.Lock()
 	emails = append(emails, email)

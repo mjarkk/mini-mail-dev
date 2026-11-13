@@ -4,9 +4,14 @@ export class EmailEventsWebsocket {
 	private closed = false
 	private socket: WebSocket | null = null
 	private newEmail: () => void
+	private connectionChange: (connected: boolean) => void
 
-	constructor(newEmail: () => void) {
+	constructor(
+		newEmail: () => void,
+		connectionChange: (connected: boolean) => void,
+	) {
 		this.newEmail = newEmail
+		this.connectionChange = connectionChange
 	}
 
 	async start() {
@@ -19,7 +24,9 @@ export class EmailEventsWebsocket {
 			await new Promise((res) => {
 				this.socket = new WebSocket(getUrl("/api/emails-events", true))
 				this.socket.onopen = () => {
-					if (this.closed && !first) {
+					this.connectionChange(true)
+					// Emails that arrived while disconnected were never announced.
+					if (!this.closed && !first) {
 						this.newEmail()
 					}
 				}
@@ -28,7 +35,10 @@ export class EmailEventsWebsocket {
 						this.newEmail()
 					}
 				}
-				this.socket.onclose = () => setTimeout(res, 5_000)
+				this.socket.onclose = () => {
+					this.connectionChange(false)
+					setTimeout(res, 5_000)
+				}
 			})
 			if (this.closed) {
 				break

@@ -2,14 +2,19 @@ package main
 
 import (
 	"crypto/tls"
+	_ "embed"
 	"encoding/base64"
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	mail "github.com/xhit/go-simple-mail/v2"
 )
+
+//go:embed client-compatibility.html
+var clientCompatibilityHTML string
 
 func main() {
 	client := mail.NewSMTPClient()
@@ -84,6 +89,25 @@ func main() {
 		SetBody(mail.TextHTML, "<h1>Attachment test!</h1>").
 		Attach(&imageFile).
 		Attach(&screenshot)
+
+	mustSendEmail(smtpClient, email)
+
+	email = mail.NewMSG().
+		SetFrom("Example sender <compatibility@example.org>").
+		AddTo("recipient@example.net").
+		SetSubject("Email client compatibility test").
+		SetBody(mail.TextHTML, clientCompatibilityHTML).
+		AddAlternative(mail.TextPlain, "Switch between email clients to compare how they render this message.\n")
+
+	mustSendEmail(smtpClient, email)
+
+	// Gmail clips messages whose HTML exceeds 102 KB.
+	paragraph := "<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>\n"
+	email = mail.NewMSG().
+		SetFrom("Example sender <long@example.org>").
+		AddTo("recipient@example.net").
+		SetSubject("Very long email").
+		SetBody(mail.TextHTML, "<h1>Very long email</h1>\n"+strings.Repeat(paragraph, 1000)+"<p><b>The end.</b></p>")
 
 	mustSendEmail(smtpClient, email)
 

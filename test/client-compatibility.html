@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Client compatibility test</title>
+<!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
+<style>
+	@import url("https://fonts.googleapis.com/css2?family=Lobster&display=swap");
+	:root { --brand: #7c3aed; }
+	body { margin: 0; padding: 24px 0; background: #e9ecf3; font-family: Helvetica, Arial, sans-serif; }
+	.wrapper { max-width: 600px; margin: 0 auto; }
+	.card { background: #ffffff; border-radius: 16px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15); overflow: hidden; }
+	.hero { background-color: #5b21b6; background-image: linear-gradient(135deg, #5b21b6, #db2777); color: #ffffff; padding: 36px 32px; }
+	.hero h1 { font-family: Lobster, Georgia, serif; font-weight: normal; margin: 0; font-size: 34px; }
+	.badge { position: relative; top: -4px; display: inline-block; background: rgba(255, 255, 255, 0.25); border-radius: 999px; padding: 4px 10px; font-size: 11px; letter-spacing: 1px; }
+	.section { padding: 20px 32px; border-top: 1px solid #eceff4; }
+	.label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; margin: 0 0 10px; }
+	.row { display: flex; gap: 12px; }
+	.tile { flex: 1; background: #f5f3ff; border-radius: 12px; padding: 14px; text-align: center; }
+	.grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+	.grid div { background: #fdf2f8; padding: 10px; text-align: center; border-radius: 8px; }
+	.vars { color: var(--brand); font-weight: bold; }
+	.button { display: inline-block; background: #7c3aed; color: #ffffff !important; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; }
+	.button:hover { background: #db2777; }
+	.chained.highlight { background: #fef08a; padding: 2px 4px; }
+	td[data-attr] { color: #059669; font-weight: bold; }
+	.footer { color: #6b7280; font-size: 12px; text-align: center; padding: 24px; }
+	@media (max-width: 620px) { .row { display: block; } .tile { margin-bottom: 8px; } .hero h1 { font-size: 26px; } }
+	@media (prefers-color-scheme: dark) { .card { background: #111827; color: #f9fafb; } }
+</style>
+</head>
+<body style="margin:0; padding:24px 0; background:#e9ecf3;" bgcolor="#e9ecf3">
+<div class="wrapper">
+<!--[if mso]><table role="presentation" width="600" align="center" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
+	<div class="card">
+		<div class="hero">
+			<span class="badge">NEW</span>
+			<h1>Client compatibility test</h1>
+			<p style="margin:8px 0 0; opacity:0.85;">Every section uses HTML or CSS that some email clients drop.</p>
+		</div>
+
+		<div class="section">
+			<p class="label">Conditional comments</p>
+			<!--[if mso]><p style="margin:0; color:#b91c1c; font-weight:bold;">Outlook for Windows only: this paragraph comes from an [if mso] comment.</p><![endif]-->
+			<!--[if !mso]><!--><p style="margin:0; color:#047857; font-weight:bold;">Hidden from Outlook for Windows by an [if !mso] comment.</p><!--<![endif]-->
+		</div>
+
+		<div class="section">
+			<p class="label">Flexbox row (display:flex, gap)</p>
+			<div class="row">
+				<div class="tile">One</div>
+				<div class="tile">Two</div>
+				<div class="tile">Three</div>
+			</div>
+		</div>
+
+		<div class="section">
+			<p class="label">CSS grid</p>
+			<div class="grid"><div>A</div><div>B</div><div>C</div></div>
+		</div>
+
+		<div class="section">
+			<p class="label">Selectors and variables</p>
+			<p style="margin:0 0 6px;">CSS variable: <span class="vars">purple when var() works</span></p>
+			<p style="margin:0 0 6px;">Chained classes: <span class="chained highlight">yellow highlight when .a.b works</span></p>
+			<table role="presentation"><tr><td data-attr="yes">Attribute selector: green when [data-attr] works</td></tr></table>
+		</div>
+
+		<div class="section">
+			<p class="label">Inline styles</p>
+			<div style="border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.25); padding:12px; background-color:#ecfeff; border:2px solid #06b6d4;">Rounded corners and a shadow</div>
+			<div style="margin-top:10px; padding:12px; color:#ffffff; background-color:#0f172a; background-image:url('https://placehold.co/600x80/0e7490/0e7490.png'); background-size:cover;">Background image (dark navy fallback without it)</div>
+			<div style="margin-top:10px; width:50%; max-width:200px; padding:12px; background:rgba(124, 58, 237, 0.2);">rgba() background, width 50% / max-width 200px</div>
+		</div>
+
+		<div class="section">
+			<p class="label">Images</p>
+			<img src="https://placehold.co/160x60.png?text=PNG" alt="Remote PNG" width="160" height="60" style="display:inline-block; border-radius:8px;">
+			<img src="https://placehold.co/160x60.webp?text=WebP" alt="Remote WebP" width="160" height="60" style="display:inline-block;">
+			<img src="https://placehold.co/160x60.svg?text=SVG" alt="Remote SVG image" width="160" height="60" style="display:inline-block;">
+			<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIW2NgqD9TDwADnwGW8i2oCwAAAABJRU5ErkJggg==" alt="Base64 PNG" width="160" height="60" style="display:inline-block; background:#e5e7eb;">
+		</div>
+
+		<div class="section" style="text-align:center;">
+			<p class="label">Button (hover turns it pink)</p>
+			<!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="https://example.com" style="height:46px; v-text-anchor:middle; width:200px;" arcsize="18%" stroke="f" fillcolor="#7c3aed"><w:anchorlock/><center style="color:#ffffff; font-family:Arial, sans-serif; font-size:16px; font-weight:bold;">Call to action</center></v:roundrect><![endif]-->
+			<!--[if !mso]><!--><a class="button" href="https://example.com">Call to action</a><!--<![endif]-->
+		</div>
+
+		<div class="footer">
+			Web font: <span style="font-family:Lobster, Georgia, serif; font-size:18px; color:#111827;">Lobster via @import</span><br>
+			Unstyled text below uses the client's default font:
+		</div>
+		<p>The quick brown fox jumps over the lazy dog. <a href="https://example.com">An unstyled link</a>.</p>
+	</div>
+<!--[if mso]></td></tr></table><![endif]-->
+</div>
+</body>
+</html>

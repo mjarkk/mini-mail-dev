@@ -1,3 +1,25 @@
-.hljs {
-    border-radius: 6px;
+pre code.hljs {
+	display: block;
+	padding: 16px;
+	color: var(--fg);
+	font-size: 13px;
+	line-height: 1.6;
+}
+
+.hljs-name {
+	font-weight: 600;
+}
+
+.hljs-attr {
+	color: var(--muted);
+}
+
+.hljs-string {
+	color: var(--signal);
+}
+
+.hljs-comment,
+.hljs-meta {
+	color: var(--muted);
+	font-style: italic;
 }
