@@ -260,6 +260,11 @@ func (p *Parser) appendTag(token html.Token, selfClosing bool) {
 		props = append(props, v.Key+"=\""+html.EscapeString(value)+"\"")
 	}
 
+	if token.Data == "a" {
+		// The email is shown in an iframe; following a link inside it would replace the email.
+		props = append(props, `target="_blank"`, `rel="noopener noreferrer"`)
+	}
+
 	propsAsString := strings.Join(props, " ")
 	if len(props) > 0 {
 		propsAsString = " " + propsAsString
