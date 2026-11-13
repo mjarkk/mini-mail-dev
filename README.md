@@ -1,6 +1,6 @@
 # `mini-mail-dev`
 
-![Screenshot](/screenshot.jpg?raw=true "Screnshot")
+![Screenshot of mini-mail-dev in light and dark theme](/screenshot.jpg?raw=true "Screenshot")
 
 A alternative take on a development / testing email server.
 
@@ -87,7 +87,7 @@ Here are things this project aims to improve / do different compared to maildev:
 
 Requirements:
 
-- Golang v1.21 +
+- Golang v1.27 +
 - Nodejs
 
 ### Dev
