@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/DusanKasan/parsemail"
+	"github.com/emersion/go-sasl"
 	"github.com/emersion/go-smtp"
 	"github.com/fasthttp/websocket"
 	"github.com/oklog/ulid/v2"
@@ -46,30 +47,40 @@ func (b *Backend) NewSession(_ *smtp.Conn) (smtp.Session, error) {
 
 // A Session is returned after EHLO.
 type Session struct {
-	Backend *Backend
-	From    string
-	To      string
-	Auth    bool
+	Backend       *Backend
+	From          string
+	To            string
+	Authenticated bool
 }
 
 // unauthenticated returns true if the session is not authenticated
 func (s *Session) unauthenticated() bool {
-	return s.Backend.Credentials != nil && !s.Auth
+	return s.Backend.Credentials != nil && !s.Authenticated
 }
 
-// AuthPlain implements smtp.Session
-func (s *Session) AuthPlain(username, password string) error {
-	creds := s.Backend.Credentials
-	if creds == nil {
+// AuthMechanisms implements smtp.AuthSession
+func (s *Session) AuthMechanisms() []string {
+	if s.Backend.Credentials == nil {
 		return nil
 	}
+	return []string{sasl.Plain}
+}
 
-	if username != creds.Username || password != creds.Password {
-		return smtp.ErrAuthFailed
+// Auth implements smtp.AuthSession
+func (s *Session) Auth(mech string) (sasl.Server, error) {
+	creds := s.Backend.Credentials
+	if creds == nil || mech != sasl.Plain {
+		return nil, smtp.ErrAuthUnknownMechanism
 	}
 
-	s.Auth = true
-	return nil
+	return sasl.NewPlainServer(func(identity, username, password string) error {
+		if username != creds.Username || password != creds.Password {
+			return smtp.ErrAuthFailed
+		}
+
+		s.Authenticated = true
+		return nil
+	}), nil
 }
 
 // Mail implements smtp.Session
@@ -185,7 +196,6 @@ func StartEmailServer(opts StartEmailServerOptions) {
 	server.MaxMessageBytes = 1024 * 1024 * 10 // 10 MB
 	server.MaxRecipients = 50
 	server.AllowInsecureAuth = true
-	server.AuthDisabled = backend.Credentials == nil
 
 	if opts.Tls {
 		tlsConfig, err := generateTLSConfig()
