@@ -18,7 +18,6 @@ import (
 
 	"github.com/emersion/go-sasl"
 	"github.com/emersion/go-smtp"
-	"github.com/fasthttp/websocket"
 	"github.com/jhillyerd/enmime/v2"
 	"github.com/oklog/ulid/v2"
 )
@@ -139,10 +138,7 @@ func (s *Session) Data(r io.Reader) error {
 	}
 	emailsLock.Unlock()
 
-	for _, c := range websocketConnections {
-		c.WriteMessage(websocket.TextMessage, []byte("new-email"))
-	}
-
+	notifyNewEmail()
 	return nil
 }
 

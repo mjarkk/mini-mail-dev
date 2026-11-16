@@ -335,13 +335,14 @@ var imageMIMEFeatures = map[string]string{
 
 // imageFeatures guesses the image format of src from its data: MIME type or file extension.
 func imageFeatures(src string) []string {
-	lower := strings.ToLower(strings.TrimSpace(src))
-	if rest, ok := strings.CutPrefix(lower, "data:"); ok {
-		mime, _, _ := strings.Cut(rest, ";")
-		mime, _, _ = strings.Cut(mime, ",")
-		return []string{"image-base64", imageMIMEFeatures[mime]}
+	src = strings.TrimSpace(src)
+	if len(src) >= len("data:") && strings.EqualFold(src[:len("data:")], "data:") {
+		// Cut before lowercasing: the data after the MIME type can be megabytes long.
+		mime, _, _ := strings.Cut(src[len("data:"):], ",")
+		mime, _, _ = strings.Cut(mime, ";")
+		return []string{"image-base64", imageMIMEFeatures[strings.ToLower(mime)]}
 	}
-	u, err := url.Parse(lower)
+	u, err := url.Parse(strings.ToLower(src))
 	if err != nil {
 		return nil
 	}

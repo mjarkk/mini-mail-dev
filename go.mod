@@ -5,7 +5,6 @@ go 1.27
 require (
 	github.com/emersion/go-sasl v0.0.0-20241020182733-b788ff22d5a6
 	github.com/emersion/go-smtp v0.25.1
-	github.com/fasthttp/websocket v1.5.12
 	github.com/gofiber/contrib/v3/websocket v1.2.14
 	github.com/gofiber/fiber/v3 v3.7.0
 	github.com/jhillyerd/enmime/v2 v2.5.0
@@ -21,6 +20,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clipperhouse/displaywidth v0.11.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
+	github.com/fasthttp/websocket v1.5.12 // indirect
 	github.com/fatih/color v1.19.0 // indirect
 	github.com/go-test/deep v1.1.2 // indirect
 	github.com/goccy/go-json v0.10.6 // indirect

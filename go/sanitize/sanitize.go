@@ -254,7 +254,9 @@ func (p *parser) startTag(z *html.Tokenizer, tt html.TokenType) {
 			marker = " " + bodyMarker
 		}
 	}
-	p.out.WriteString("<" + out + p.attributes(name, token.Attr, attrs, tt == html.SelfClosingTagToken) + marker + ">")
+	p.out.WriteString("<" + out)
+	p.out.WriteString(p.attributes(name, token.Attr, attrs, tt == html.SelfClosingTagToken))
+	p.out.WriteString(marker + ">")
 	if !void {
 		p.open = append(p.open, openElement{name: name, out: out})
 	}
@@ -398,7 +400,9 @@ func (p *parser) attributes(tag string, list []html.Attribute, attrs map[string]
 			}
 		}
 		written[key] = true
-		b.WriteString(" " + key + `="` + html.EscapeString(value) + `"`)
+		b.WriteString(" " + key + `="`)
+		b.WriteString(html.EscapeString(value))
+		b.WriteByte('"')
 	}
 
 	if tag == "a" || tag == "area" {

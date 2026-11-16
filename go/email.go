@@ -53,7 +53,7 @@ func ConvertEmbeddedFile(part *enmime.Part) EmbeddedFile {
 }
 
 type EmailRemainder struct {
-	Raw string `json:"raw"`
+	Raw []byte `json:"-"`
 
 	Header mail.Header `json:"header"`
 
@@ -99,6 +99,9 @@ type Email struct {
 	To     []*Address `json:"to"`
 
 	Remainder EmailRemainder `json:"-"`
+
+	// Lowercased; "\x00" between the fields keeps a match from spanning two of them.
+	searchText string
 }
 
 // ConvertEmail converts a parsed enmime.Envelope to a Email
@@ -123,7 +126,7 @@ func ConvertEmail(ulid ulid.ULID, emlRawData []byte, env *enmime.Envelope, realD
 		BodyHint: bodyHint,
 		BodyType: "text",
 		Remainder: EmailRemainder{
-			Raw:             string(emlRawData),
+			Raw:             emlRawData,
 			Header:          mail.Header(env.Root.Header),
 			ReplyTo:         addressList(env, "Reply-To"),
 			Cc:              addressList(env, "Cc"),
@@ -159,7 +162,24 @@ func ConvertEmail(ulid ulid.ULID, emlRawData []byte, env *enmime.Envelope, realD
 		resp.To = []*Address{{Address: realTo}}
 	}
 
+	resp.searchText = searchText(&resp)
 	return resp
+}
+
+func searchText(email *Email) string {
+	fields := []string{email.Subject}
+	if email.Sender != nil {
+		fields = append(fields, email.Sender.Address, email.Sender.Name)
+	}
+	for _, ad := range email.To {
+		fields = append(fields, ad.Address, ad.Name)
+	}
+	if email.BodyType == "text" {
+		fields = append(fields, email.Remainder.TextBody)
+	} else {
+		fields = append(fields, email.Remainder.HTMLBody)
+	}
+	return strings.ToLower(strings.Join(fields, "\x00"))
 }
 
 // ConvertAddressList converts a list of mail.Address to a list of Address

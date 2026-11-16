@@ -22,73 +22,46 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-var websocketConnectionsLock sync.Mutex
-var websocketConnections []*websocket.Conn
+var newEmailSubscribersLock sync.Mutex
+var newEmailSubscribers = map[chan struct{}]bool{}
 
-func registerWebsocketConnection(c *websocket.Conn) {
-	websocketConnectionsLock.Lock()
-	defer websocketConnectionsLock.Unlock()
-	websocketConnections = append(websocketConnections, c)
+func subscribeToNewEmails() chan struct{} {
+	ch := make(chan struct{}, 1)
+	newEmailSubscribersLock.Lock()
+	defer newEmailSubscribersLock.Unlock()
+	newEmailSubscribers[ch] = true
+	return ch
 }
-func unregisterWebsocketConnection(c *websocket.Conn) bool {
-	websocketConnectionsLock.Lock()
-	defer websocketConnectionsLock.Unlock()
-	for _, websocketConnection := range websocketConnections {
-		if websocketConnection == c {
-			websocketConnections = websocketConnections[:len(websocketConnections)-1]
-			return true
+
+func unsubscribeFromNewEmails(ch chan struct{}) {
+	newEmailSubscribersLock.Lock()
+	defer newEmailSubscribersLock.Unlock()
+	delete(newEmailSubscribers, ch)
+}
+
+// notifyNewEmail never blocks, so a stalled browser tab can't hold up an SMTP delivery.
+func notifyNewEmail() {
+	newEmailSubscribersLock.Lock()
+	defer newEmailSubscribersLock.Unlock()
+	for ch := range newEmailSubscribers {
+		select {
+		case ch <- struct{}{}:
+		default:
+			// One pending notification is enough: the tab refetches the whole list.
 		}
-	}
-	return false
-}
-
-func filterSanitize(input string) string {
-	return strings.TrimSpace(strings.ToLower(input))
-}
-
-func comparitorFn(input string) func(s string) bool {
-	input = filterSanitize(input)
-	if input == "" {
-		return func(s string) bool {
-			return true
-		}
-	}
-
-	return func(s string) bool {
-		return strings.Contains(filterSanitize(s), input)
 	}
 }
 
-func filterEmail(searchValue string, email Email) bool {
-	comparitor := comparitorFn(searchValue)
-
-	if comparitor(email.Subject) {
-		return true
-	}
-
-	if comparitor(email.Sender.Address) {
-		return true
-	}
-
-	if comparitor(email.Sender.Name) {
-		return true
-	}
-
-	for _, ad := range email.To {
-		if comparitor(ad.Address) {
-			return true
-		}
-
-		if comparitor(ad.Name) {
-			return true
+// searchEmails returns pointers into list, newest first.
+func searchEmails(list []Email, search string) []*Email {
+	search = strings.ToLower(strings.TrimSpace(search))
+	result := make([]*Email, 0, len(list))
+	for i := len(list) - 1; i >= 0; i-- {
+		if strings.Contains(list[i].searchText, search) {
+			result = append(result, &list[i])
 		}
 	}
-
-	if email.BodyType == "text" {
-		return comparitor(email.Remainder.TextBody)
-	}
-
-	return comparitor(email.Remainder.HTMLBody)
+	return result
 }
 
 // ErrorResponse is the response send by the server when an error occurs
@@ -154,50 +127,41 @@ func StartWebserver(dist embed.FS, opts StartWebserverOptions) {
 	})
 
 	apiGroup.Get("/emails-events", websocket.New(func(c *websocket.Conn) {
-		registerWebsocketConnection(c)
+		// Returning leaves a hijacked connection open.
+		defer c.Close()
 
-		var err error
-		for {
-			_, _, err = c.ReadMessage()
-			if err != nil {
-				break
+		newEmail := subscribeToNewEmails()
+		defer unsubscribeFromNewEmails(newEmail)
+
+		// The tab never sends anything; reading is how a closed tab is noticed.
+		closed := make(chan struct{})
+		go func() {
+			defer close(closed)
+			for {
+				if _, _, err := c.ReadMessage(); err != nil {
+					return
+				}
 			}
-		}
+		}()
 
-		if !unregisterWebsocketConnection(c) {
-			log.Println("Was unable to close websocket connection, this should not happen and is a bug")
+		for {
+			select {
+			case <-newEmail:
+				if c.WriteMessage(websocket.TextMessage, []byte("new-email")) != nil {
+					return
+				}
+			case <-closed:
+				return
+			}
 		}
 	}))
 
 	apiGroup.Get("/emails", func(c fiber.Ctx) error {
-		searchValue := strings.TrimSpace(c.Query("search"))
-
 		// Held through c.JSON: the response points into emails.
 		emailsLock.Lock()
 		defer emailsLock.Unlock()
 
-		if searchValue == "" {
-			// Take the quick path
-
-			response := make([]*Email, len(emails))
-
-			for idx := len(emails) - 1; idx >= 0; idx-- {
-				response[len(emails)-idx-1] = &emails[idx]
-			}
-
-			return c.JSON(response)
-		}
-
-		response := []*Email{}
-		for idx := len(emails) - 1; idx >= 0; idx-- {
-			if len(searchValue) > 0 && !filterEmail(searchValue, emails[idx]) {
-				continue
-			}
-
-			response = append(response, &emails[idx])
-		}
-
-		return c.JSON(response)
+		return c.JSON(searchEmails(emails, c.Query("search")))
 	})
 
 	apiGroup.Get("/emails/:id/remainder", func(c fiber.Ctx) error {
@@ -206,6 +170,15 @@ func StartWebserver(dist embed.FS, opts StartWebserverOptions) {
 			return err
 		}
 		return c.JSON(email.Remainder)
+	})
+
+	apiGroup.Get("/emails/:id/raw", func(c fiber.Ctx) error {
+		email, err := findEmail(c.Params("id"))
+		if err != nil {
+			return err
+		}
+		c.Response().Header.SetContentType(fiber.MIMETextPlainCharsetUTF8)
+		return c.Send(email.Remainder.Raw)
 	})
 
 	apiGroup.Get("/email-clients", func(c fiber.Ctx) error {

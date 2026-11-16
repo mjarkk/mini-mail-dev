@@ -91,26 +91,47 @@ func dataOrARIA(key string) bool {
 // dataImages permits data:image/ URLs, which are inert outside of navigation.
 func safeURL(raw string, dataImages bool) bool {
 	// Browsers drop tabs and newlines anywhere in a URL and trim leading control
-	// characters and spaces, so "java\tscript:" still runs script.
-	cleaned := strings.Map(func(r rune) rune {
-		if r == '\t' || r == '\n' || r == '\r' {
-			return -1
-		}
-		return r
-	}, raw)
-	cleaned = strings.TrimLeft(cleaned, "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0b\x0c\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f ")
+	// characters and spaces, so "java\tscript:" still runs script. Only the start
+	// is cleaned: a data: URL can be megabytes long.
+	raw = strings.TrimLeft(raw, "\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f ")
 
-	i := strings.IndexAny(cleaned, ":/?#")
-	if i <= 0 || cleaned[i] != ':' {
+	i := strings.IndexAny(raw, ":/?#")
+	if i <= 0 || raw[i] != ':' {
 		return true
 	}
-	switch strings.ToLower(cleaned[:i]) {
+	switch strings.ToLower(strings.Map(dropTabsAndNewlines, raw[:i])) {
 	case "http", "https", "mailto", "tel", "sms", "cid":
 		return true
 	case "data":
-		return dataImages && strings.HasPrefix(strings.ToLower(cleaned[i+1:]), "image/")
+		return dataImages && hasLowerPrefixIgnoringTabs(raw[i+1:], "image/")
 	}
 	return false
+}
+
+func dropTabsAndNewlines(r rune) rune {
+	if r == '\t' || r == '\n' || r == '\r' {
+		return -1
+	}
+	return r
+}
+
+// hasLowerPrefixIgnoringTabs compares ASCII case-insensitively; prefix must be lowercase.
+func hasLowerPrefixIgnoringTabs(s, prefix string) bool {
+	for i := 0; i < len(prefix); i++ {
+		s = strings.TrimLeft(s, "\t\n\r")
+		if s == "" {
+			return false
+		}
+		c := s[0]
+		if 'A' <= c && c <= 'Z' {
+			c += 'a' - 'A'
+		}
+		if c != prefix[i] {
+			return false
+		}
+		s = s[1:]
+	}
+	return true
 }
 
 func isHTTP(raw string) bool {

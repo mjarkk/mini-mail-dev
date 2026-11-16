@@ -40,7 +40,16 @@ export function Body(props: BodyProps) {
 
 	const plain = () => emailRemainder()?.textBody ?? ""
 	const html = () => emailRemainder()?.htmlBody ?? ""
-	const raw = () => emailRemainder()?.raw ?? ""
+	const [rawSource] = createResource(
+		() => isRaw() && email().id,
+		async (id) => {
+			const response = await fetch(`/api/emails/${id}/raw`)
+			if (!response.ok) throw (await response.json()).error
+			return response.text()
+		},
+	)
+	// Not while refreshing, which still holds the previous email's source.
+	const raw = () => (rawSource.state === "ready" ? rawSource() : "")
 
 	const [clients] = createResource<EmailClient[]>(async () => {
 		const response = await fetch("/api/email-clients")
