@@ -1,31 +1,30 @@
-ARG BUILDPLATFORM
+FROM --platform=$BUILDPLATFORM node:26-slim AS frontend
 
-FROM --platform=linux/amd64 node:26-slim AS frontend
-
-COPY . /app
 WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
 
-RUN npm i && npm run build
-
-FROM --platform=${BUILDPLATFORM:-linux/amd64} golang:1.27
+FROM --platform=$BUILDPLATFORM golang:1.27 AS backend
 
 ARG TARGETOS
 ARG TARGETARCH
 ARG TARGETVARIANT
 
 WORKDIR /usr/src/app
-
-COPY go.mod go.sum .
-
+COPY go.mod go.sum ./
 RUN go mod download
-
 COPY go go
 COPY main.go .
 COPY --from=frontend /app/dist dist
+# scratch has no zoneinfo; timetzdata embeds it so the TZ env var still applies.
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH GOARM=${TARGETVARIANT#v} \
+    go build -trimpath -tags timetzdata -ldflags="-s -w" -o /mini-mail-dev
 
-RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} GOARM=${TARGETVARIANT#v} \
-    go build -o /usr/bin/mini-mail-dev && \
-    rm -rf go main.go go.mod go.sum dist
+FROM scratch
+
+COPY --from=backend /mini-mail-dev /usr/bin/mini-mail-dev
 
 EXPOSE 1025/tcp
 EXPOSE 1080/tcp

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"mime"
 	"strings"
 	"sync"
 
@@ -312,6 +313,8 @@ func StartWebserver(dist embed.FS, opts StartWebserverOptions) {
 		return c.Send(attachment.Data)
 	})
 
+	// Go's built-in table lacks this type, and the scratch image has no /etc/mime.types to fall back on.
+	mime.AddExtensionType(".webmanifest", "application/manifest+json")
 	app.Get("/*", static.New("dist", static.Config{FS: dist}))
 
 	fmt.Println("Running Web server at", opts.Addr)
