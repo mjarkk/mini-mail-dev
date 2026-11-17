@@ -42,7 +42,9 @@ export function Header({ setSearch, search, count, connected }: HeaderProps) {
 						end={String(shownCount()).padStart(2, "0")}
 						endColor="var(--signal)"
 						label={`Inbox, ${count()} emails`}
-						dot={6}
+						dots={[6, 5, 4]}
+						wrappedDot={5}
+						tabular
 					/>
 				</h1>
 			</header>

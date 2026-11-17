@@ -1,4 +1,11 @@
-import { Index, createMemo, createSignal, onCleanup, onMount } from "solid-js"
+import {
+	Index,
+	Show,
+	createMemo,
+	createSignal,
+	onCleanup,
+	onMount,
+} from "solid-js"
 
 const ROWS = 7
 const DIGIT_COLUMNS = 5
@@ -84,16 +91,22 @@ interface DotsProps {
 function Dots(props: DotsProps) {
 	return (
 		// Index keeps one circle per grid cell, so a cell's fill change can transition.
-		<Index each={props.fills}>
-			{(fill, i) => (
-				<circle
-					cx={(i % props.columns) * props.pitchX + props.dot / 2}
-					cy={Math.floor(i / props.columns) * props.pitchY + props.dot / 2}
-					r={props.dot / 2}
-					style={{ fill: fill() }}
-				/>
+		// Keyed on columns: Index matches circles by flat position, so a new column
+		// count would move every circle to another cell mid-fade.
+		<Show when={props.columns} keyed>
+			{(columns) => (
+				<Index each={props.fills}>
+					{(fill, i) => (
+						<circle
+							cx={(i % columns) * props.pitchX + props.dot / 2}
+							cy={Math.floor(i / columns) * props.pitchY + props.dot / 2}
+							r={props.dot / 2}
+							style={{ fill: fill() }}
+						/>
+					)}
+				</Index>
 			)}
-		</Index>
+		</Show>
 	)
 }
 
@@ -155,16 +168,20 @@ const WORD_GAP = 2
 export interface DotMatrixProps {
 	/** Pinned to the first column. */
 	start: string
-	/** Pinned to the last column; drops to a band below `start` when both don't fit on one. */
+	/** Pinned to the last column; drops to a band below `start` when no size in `dots` fits both on one. */
 	end: string
-	/** Dot diameter in px. */
-	dot: number
+	/** Dot diameters in px, largest first; the first that fits `start` and `end` on one line wins. */
+	dots: Array<number>
+	/** Dot diameter in px once `end` has dropped below `start`. */
+	wrappedDot: number
 	label: string
 	/**
 	 * CSS color for `end`'s lit dots; defaults to the current text color.
 	 * A color rather than a class: a dot that swaps class mid-fade fades toward the old currentColor.
 	 */
 	endColor?: string
+	/** Every digit gets the same width, so a changing number only changes dot size when its digit count does. */
+	tabular?: boolean
 }
 
 /** A dot grid as wide as its container. */
@@ -181,15 +198,20 @@ export function DotMatrix(props: DotMatrixProps) {
 	})
 
 	const layout = createMemo(() => {
-		const dot = props.dot
+		const start = rasterize(props.start, props.tabular)
+		const end = rasterize(props.end, props.tabular)
+		const columnsAt = (dot: number) =>
+			Math.max(1, Math.floor((width() - dot) / pitchFor(dot)) + 1)
+
+		const fitting = props.dots.find(
+			(dot) => columnsAt(dot) >= start.columns + WORD_GAP + end.columns,
+		)
+		const wrapped = fitting === undefined
+		const dot = fitting ?? props.wrappedDot
 		const pitch = pitchFor(dot)
-		const columns = Math.max(1, Math.floor((width() - dot) / pitch) + 1)
+		const columns = columnsAt(dot)
 		// Stretched slightly so the last column ends flush with the container edge.
 		const pitchX = columns > 1 ? (width() - dot) / (columns - 1) : pitch
-
-		const start = rasterize(props.start)
-		const end = rasterize(props.end)
-		const wrapped = start.columns + WORD_GAP + end.columns > columns
 		const rows = wrapped ? 2 * ROWS + 1 : ROWS
 
 		const fills = Array<string>(columns * rows).fill("var(--unlit)")
@@ -203,7 +225,14 @@ export function DotMatrix(props: DotMatrixProps) {
 			props.endColor ?? "currentColor",
 		)
 
-		return { fills, columns, pitch, pitchX, height: (rows - 1) * pitch + dot }
+		return {
+			fills,
+			columns,
+			dot,
+			pitch,
+			pitchX,
+			height: (rows - 1) * pitch + dot,
+		}
 	})
 
 	return (
@@ -221,7 +250,7 @@ export function DotMatrix(props: DotMatrixProps) {
 				columns={layout().columns}
 				pitchX={layout().pitchX}
 				pitchY={layout().pitch}
-				dot={props.dot}
+				dot={layout().dot}
 			/>
 		</svg>
 	)
